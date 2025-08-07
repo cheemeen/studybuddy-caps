@@ -982,9 +982,19 @@ class StudyBuddy {
         const confirmPassword = document.getElementById('confirmPassword').value;
         const grade = document.getElementById('studentGrade').value;
         
-        if (!username || !email || !password) {
-            this.showNotification('Please fill in all fields', 'error');
-            return;
+        // Validate required fields based on mode
+        if (this.isSignupMode) {
+            // Signup mode - all fields required
+            if (!username || !email || !password || !grade) {
+                this.showNotification('Please fill in all fields', 'error');
+                return;
+            }
+        } else {
+            // Login mode - only username and password required
+            if (!username || !password) {
+                this.showNotification('Please fill in all fields', 'error');
+                return;
+            }
         }
         
         if (this.isSignupMode && !grade) {
