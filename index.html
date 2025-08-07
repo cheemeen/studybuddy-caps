@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyBuddy - Your Learning Companion</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="AI-powered study assistant aligned with South African CAPS curriculum for grades 3-12">
+    <meta name="theme-color" content="#4facfe">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="StudyBuddy">
+    <meta name="msapplication-TileColor" content="#4facfe">
+    <meta name="msapplication-config" content="browserconfig.xml">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-192x192.png">
+    
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="pwa-styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Tesseract.js for OCR -->
+    <script src="https://unpkg.com/tesseract.js@v4.1.1/dist/tesseract.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <h1>StudyBuddy</h1>
+            </div>
+            <div class="user-info">
+                <span id="welcomeText">Welcome, Student!</span>
+                <div class="score-display">
+                    <i class="fas fa-star"></i>
+                    <span id="totalScore">0</span> points
+                </div>
+                <div class="auth-buttons">
+                    <button id="loginBtn" class="btn btn-secondary btn-sm">Sign In</button>
+                    <button id="signupBtn" class="btn btn-primary btn-sm">Sign Up</button>
+                    <button id="logoutBtn" class="btn btn-secondary btn-sm" style="display: none;">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="navigation">
+            <button class="nav-btn active" data-section="dashboard">
+                <i class="fas fa-home"></i>
+                Dashboard
+            </button>
+            <button class="nav-btn" data-section="notes">
+                <i class="fas fa-camera"></i>
+                Capture Notes
+            </button>
+            <button class="nav-btn" data-section="upload">
+                <i class="fas fa-upload"></i>
+                Upload Exams
+            </button>
+            <button class="nav-btn" data-section="flashcards">
+                <i class="fas fa-cards-blank"></i>
+                Flashcards
+            </button>
+            <button class="nav-btn" data-section="mock-exams">
+                <i class="fas fa-clipboard-check"></i>
+                Mock Exams
+            </button>
+        </nav>
+
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <div class="welcome-card">
+                    <h2>🎉 Welcome to StudyBuddy!</h2>
+                    <p>Your fun learning companion for better grades!</p>
+                    <div class="user-info">
+                        <div class="user-avatar">👤</div>
+                        <div class="user-details">
+                            <h3 id="userDisplayName">Guest User</h3>
+                            <p id="userEmail">Not logged in</p>
+                            <p id="userGrade" class="user-grade">Grade: Not selected</p>
+                            <div class="sync-status" id="syncStatus">
+                                <span class="sync-indicator offline"></span>
+                                <span>Offline Mode</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <i class="fas fa-book"></i>
+                            <h3 id="notesCount">0</h3>
+                            <p>Notes Captured</p>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-file-alt"></i>
+                            <h3 id="examsCount">0</h3>
+                            <p>Exams Uploaded</p>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-cards-blank"></i>
+                            <h3 id="flashcardsCount">0</h3>
+                            <p>Flashcards Created</p>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-trophy"></i>
+                            <h3 id="mockExamsCount">0</h3>
+                            <p>Mock Exams Taken</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="recent-activities">
+                    <h3>Recent Activities</h3>
+                    <div id="activitiesList">
+                        <!-- Activities will be populated here -->
+                    </div>
+                </div>
+                
+                <div class="ai-study-assistant">
+                    <h3><i class="fas fa-robot"></i> AI Study Assistant</h3>
+                    <div class="ai-assistant-content">
+                        <div class="study-insights" id="studyInsights">
+                            <div class="insight-card">
+                                <i class="fas fa-lightbulb"></i>
+                                <div class="insight-content">
+                                    <h4>Study Tip</h4>
+                                    <p id="studyTip">Welcome to StudyBuddy! Start by capturing some notes or creating flashcards.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="ai-recommendations" id="aiRecommendations">
+                            <h4><i class="fas fa-chart-line"></i> Personalized Recommendations</h4>
+                            <div id="recommendationsList">
+                                <!-- AI recommendations will appear here -->
+                            </div>
+                        </div>
+                        
+                        <div class="ai-actions">
+                            <button id="getStudyAdviceBtn" class="btn btn-primary">
+                                <i class="fas fa-magic"></i> Get Study Advice
+                            </button>
+                            <button id="analyzeProgressBtn" class="btn btn-secondary">
+                                <i class="fas fa-analytics"></i> Analyze My Progress
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI To-Do List -->
+                <div class="ai-todo-section">
+                    <h3><i class="fas fa-tasks"></i> AI Study To-Do List</h3>
+                    <div class="ai-todo-content">
+                        <div class="todo-header">
+                            <div class="grade-specific-info" id="gradeSpecificInfo">
+                                <p><i class="fas fa-graduation-cap"></i> Personalized for your grade level</p>
+                            </div>
+                            <div class="todo-actions">
+                                <button id="generateTodoBtn" class="btn btn-primary">
+                                    <i class="fas fa-magic"></i> Generate To-Do List
+                                </button>
+                                <button id="clearTodoBtn" class="btn btn-secondary">
+                                    <i class="fas fa-trash"></i> Clear List
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="todo-container" id="todoContainer">
+                            <div class="placeholder-content">
+                                <i class="fas fa-clipboard-list"></i>
+                                <p>Click "Generate To-Do List" to get personalized study tasks based on your grade level and progress!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notes Capture Section -->
+            <section id="notes" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-camera"></i> Capture Notes</h2>
+                    <p>Take photos of your notes and we'll help you organize them!</p>
+                </div>
+                
+                <div class="camera-container">
+                    <video id="cameraFeed" autoplay playsinline></video>
+                    <canvas id="photoCanvas" style="display: none;"></canvas>
+                    <div class="camera-controls">
+                        <button id="startCamera" class="btn btn-primary">
+                            <i class="fas fa-camera"></i> Start Camera
+                        </button>
+                        <button id="capturePhoto" class="btn btn-success" style="display: none;">
+                            <i class="fas fa-camera-retro"></i> Capture Photo
+                        </button>
+                        <button id="stopCamera" class="btn btn-secondary" style="display: none;">
+                            <i class="fas fa-stop"></i> Stop Camera
+                        </button>
+                    </div>
+                </div>
+
+                <div class="notes-gallery" id="notesGallery">
+                    <!-- Notes will be displayed here -->
+                </div>
+                
+                <div class="ai-features">
+                    <h3><i class="fas fa-magic"></i> AI Smart Features</h3>
+                    <div class="ai-actions">
+                        <button id="generateFlashcardsBtn" class="btn btn-primary" disabled>
+                            <i class="fas fa-brain"></i> Generate Flashcards from Notes
+                        </button>
+                        <div class="ai-status" id="aiStatus" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span id="aiStatusText">Processing...</span>
+                        </div>
+                    </div>
+                    <div class="ai-results" id="aiResults" style="display: none;">
+                        <h4>Generated Flashcards:</h4>
+                        <div id="generatedFlashcards"></div>
+                        <div class="ai-actions">
+                            <button id="addGeneratedCards" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Add All to My Flashcards
+                            </button>
+                            <button id="clearGenerated" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="notes-grid" id="notesGrid">
+                    <p class="empty-state">No notes captured yet. Start by taking a photo! 📸</p>
+                </div>
+            </section>
+
+            <!-- Upload Exams Section -->
+            <section id="upload" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-upload"></i> Upload Exams</h2>
+                    <p>Upload your exam papers (Word or PDF only) for study preparation!</p>
+                </div>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Drag & Drop Your Exam Files</h3>
+                        <p>Or click to browse files</p>
+                        <small>Supported formats: .docx, .doc, .pdf</small>
+                        <input type="file" id="fileInput" accept=".pdf,.doc,.docx" multiple hidden>
+                    </div>
+                </div>
+
+                <div class="uploaded-files">
+                    <h3>Uploaded Exams</h3>
+                    <div id="examsList" class="exams-list">
+                        <p class="empty-state">No exams uploaded yet. Upload your first exam! 📄</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Flashcards Section -->
+            <section id="flashcards" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-cards-blank"></i> Flashcards</h2>
+                    <p>Create and study with interactive flashcards!</p>
+                </div>
+
+                <div class="flashcard-controls">
+                    <button id="createFlashcard" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create New Flashcard
+                    </button>
+                    <button id="studyMode" class="btn btn-success">
+                        <i class="fas fa-play"></i> Start Study Mode
+                    </button>
+                </div>
+
+                <div id="flashcardCreator" class="flashcard-creator" style="display: none;">
+                    <h3>Create New Flashcard</h3>
+                    <div class="form-group">
+                        <label>Question/Front:</label>
+                        <textarea id="flashcardFront" placeholder="Enter your question or term..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Answer/Back:</label>
+                        <textarea id="flashcardBack" placeholder="Enter the answer or definition..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject:</label>
+                        <input type="text" id="flashcardSubject" placeholder="e.g., Math, Science, History...">
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveFlashcard" class="btn btn-success">Save Flashcard</button>
+                        <button id="cancelFlashcard" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+
+                <div id="studyModeContainer" class="study-mode" style="display: none;">
+                    <div class="flashcard-display">
+                        <div class="flashcard" id="currentFlashcard">
+                            <div class="flashcard-content">
+                                <p id="flashcardText">Click "Start Study Mode" to begin!</p>
+                            </div>
+                        </div>
+                        <div class="study-controls">
+                            <button id="flipCard" class="btn btn-primary">Flip Card</button>
+                            <button id="nextCard" class="btn btn-success">Next Card</button>
+                            <button id="exitStudy" class="btn btn-secondary">Exit Study Mode</button>
+                        </div>
+                        <div class="study-progress">
+                            <span id="cardProgress">Card 0 of 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flashcards-library">
+                    <h3>Your Flashcards</h3>
+                    <div id="flashcardsList" class="flashcards-list">
+                        <p class="empty-state">No flashcards created yet. Create your first flashcard! 🃏</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mock Exams Section -->
+            <section id="mock-exams" class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-clipboard-check"></i> Mock Exams</h2>
+                    <p>Take practice exams and get instant feedback!</p>
+                </div>
+
+                <div class="exam-controls">
+                    <button id="createMockExam" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Mock Exam
+                    </button>
+                    <button id="takeRandomExam" class="btn btn-success">
+                        <i class="fas fa-random"></i> Take Random Exam
+                    </button>
+                </div>
+
+                <div id="examCreator" class="exam-creator" style="display: none;">
+                    <h3>Create Mock Exam</h3>
+                    <div class="form-group">
+                        <label>Exam Title:</label>
+                        <input type="text" id="examTitle" placeholder="e.g., Math Quiz Chapter 5">
+                    </div>
+                    <div class="form-group">
+                        <label>Subject:</label>
+                        <input type="text" id="examSubject" placeholder="e.g., Mathematics">
+                    </div>
+                    <div id="questionsContainer">
+                        <div class="question-item">
+                            <h4>Question 1</h4>
+                            <input type="text" class="question-text" placeholder="Enter your question...">
+                            <div class="options-container">
+                                <input type="text" class="option" placeholder="Option A">
+                                <input type="text" class="option" placeholder="Option B">
+                                <input type="text" class="option" placeholder="Option C">
+                                <input type="text" class="option" placeholder="Option D">
+                            </div>
+                            <select class="correct-answer">
+                                <option value="">Select correct answer</option>
+                                <option value="0">Option A</option>
+                                <option value="1">Option B</option>
+                                <option value="2">Option C</option>
+                                <option value="3">Option D</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="addQuestion" class="btn btn-secondary">Add Question</button>
+                        <button id="saveExam" class="btn btn-success">Save Exam</button>
+                        <button id="cancelExam" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+
+                <div id="examTaking" class="exam-taking" style="display: none;">
+                    <div class="exam-header">
+                        <h3 id="currentExamTitle">Exam Title</h3>
+                        <div class="exam-timer">
+                            <i class="fas fa-clock"></i>
+                            <span id="examTimer">00:00</span>
+                        </div>
+                    </div>
+                    <div class="exam-progress-bar">
+                        <div id="examProgressFill" class="progress-fill"></div>
+                    </div>
+                    <div id="examQuestions" class="exam-questions"></div>
+                    <div class="exam-controls">
+                        <button id="submitExam" class="btn btn-success">Submit Exam</button>
+                        <button id="exitExam" class="btn btn-secondary">Exit Exam</button>
+                    </div>
+                </div>
+
+                <div id="examResults" class="exam-results" style="display: none;">
+                    <div class="results-header">
+                        <h3>🎉 Exam Complete!</h3>
+                        <div class="score-display-large">
+                            <span id="examScore">0</span>%
+                        </div>
+                    </div>
+                    <div class="results-details">
+                        <p>Correct Answers: <span id="correctAnswers">0</span></p>
+                        <p>Total Questions: <span id="totalQuestions">0</span></p>
+                        <p>Time Taken: <span id="timeTaken">0:00</span></p>
+                    </div>
+                    <div class="results-actions">
+                        <button id="reviewAnswers" class="btn btn-primary">Review Answers</button>
+                        <button id="retakeExam" class="btn btn-success">Retake Exam</button>
+                        <button id="backToExams" class="btn btn-secondary">Back to Exams</button>
+                    </div>
+                </div>
+
+                <div class="exams-library">
+                    <h3>Available Mock Exams</h3>
+                    <div id="mockExamsList" class="mock-exams-list">
+                        <p class="empty-state">No mock exams created yet. Create your first exam! 📝</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="notification" class="notification"></div>
+    
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="authTitle">Sign In to StudyBuddy</h2>
+                <button class="close-btn" id="closeAuthModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="authForm">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" required placeholder="Enter your username">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required placeholder="Enter your email">
+                    </div>
+                    <div class="form-group" id="gradeGroup">
+                        <label for="studentGrade">Grade Level:</label>
+                        <select id="studentGrade" required>
+                            <option value="">Select your grade</option>
+                            <option value="3">Grade 3</option>
+                            <option value="4">Grade 4</option>
+                            <option value="5">Grade 5</option>
+                            <option value="6">Grade 6</option>
+                            <option value="7">Grade 7</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                            <option value="11">Grade 11</option>
+                            <option value="12">Grade 12</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="passwordGroup">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" required placeholder="Enter your password">
+                    </div>
+                    <div class="form-group" id="confirmPasswordGroup" style="display: none;">
+                        <label for="confirmPassword">Confirm Password:</label>
+                        <input type="password" id="confirmPassword" placeholder="Confirm your password">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" id="authSubmitBtn" class="btn btn-primary">Sign In</button>
+                        <button type="button" id="switchAuthMode" class="btn btn-secondary">Need an account? Sign Up</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StudyBuddy CAPS - Deployment Verification</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .check { color: green; } .error { color: red; }
+        .test-item { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>StudyBuddy CAPS - PWA Deployment Verification</h1>
+    <div id="tests"></div>
+    
+    <script>
+        const tests = [
+            { name: 'HTTPS Check', test: () => location.protocol === 'https:' },
+            { name: 'Service Worker Support', test: () => 'serviceWorker' in navigator },
+            { name: 'Manifest File', test: async () => {
+                try { 
+                    const response = await fetch('/manifest.json');
+                    return response.ok;
+                } catch { return false; }
+            }},
+            { name: 'PWA Install Prompt', test: () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone },
+            { name: 'Local Storage', test: () => typeof(Storage) !== "undefined" },
+            { name: 'App Files', test: async () => {
+                try {
+                    const response = await fetch('/app.js');
+                    return response.ok;
+                } catch { return false; }
+            }}
+        ];
+        
+        async function runTests() {
+            const testsDiv = document.getElementById('tests');
+            
+            for (const test of tests) {
+                const div = document.createElement('div');
+                div.className = 'test-item';
+                
+                try {
+                    const result = await test.test();
+                    div.innerHTML = `<span class="${result ? 'check' : 'error'}">${result ? '✓' : '✗'}</span> ${test.name}`;
+                } catch (error) {
+                    div.innerHTML = `<span class="error">✗</span> ${test.name} (Error: ${error.message})`;
+                }
+                
+                testsDiv.appendChild(div);
+            }
+            
+            // Add link to main app
+            const linkDiv = document.createElement('div');
+            linkDiv.innerHTML = '<br><a href="/index.html" style="background: #4facfe; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Launch StudyBuddy CAPS →</a>';
+            testsDiv.appendChild(linkDiv);
+        }
+        
+        runTests();
+    </script>
+</body>
+</html>
