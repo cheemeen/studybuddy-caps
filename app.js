@@ -143,6 +143,16 @@ class StudyBuddy {
         // AI Exam Feedback controls
         document.getElementById('generateFeedbackBtn').addEventListener('click', () => this.generateIntelligentExamFeedback());
         document.getElementById('createStudyPlanBtn').addEventListener('click', () => this.createPersonalizedStudyPlan());
+        
+        // Capture tabs switching
+        document.querySelectorAll('.capture-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.switchCaptureTab(e.target.dataset.tab));
+        });
+        
+        // File upload controls
+        document.getElementById('browseFiles').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
     }
     
     switchSection(section) {
@@ -3299,6 +3309,296 @@ class StudyBuddy {
                 'Online tutoring platforms'
             ]
         };
+    }
+    
+    // File Upload and Tab Switching Methods
+    switchCaptureTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.capture-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        
+        // Update tab content
+        document.querySelectorAll('.capture-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+    
+    handleDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.classList.add('dragover');
+    }
+    
+    handleDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.classList.remove('dragover');
+    }
+    
+    handleFileDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files);
+        this.processFiles(files);
+    }
+    
+    handleFileSelect(e) {
+        const files = Array.from(e.target.files);
+        this.processFiles(files);
+    }
+    
+    async processFiles(files) {
+        const validFiles = files.filter(file => this.isValidFile(file));
+        
+        if (validFiles.length === 0) {
+            this.showNotification('Please select valid PDF, DOC, or DOCX files (max 10MB each)', 'error');
+            return;
+        }
+        
+        for (const file of validFiles) {
+            await this.uploadFile(file);
+        }
+    }
+    
+    isValidFile(file) {
+        const validTypes = ['application/pdf', 'application/msword', 
+                           'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        return validTypes.includes(file.type) && file.size <= maxSize;
+    }
+    
+    async uploadFile(file) {
+        const fileId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        
+        // Show upload progress
+        this.showUploadProgress(file.name);
+        
+        try {
+            // Simulate upload progress
+            await this.simulateUploadProgress();
+            
+            // Process the file content
+            const content = await this.extractFileContent(file);
+            
+            // Create note object
+            const note = {
+                id: fileId,
+                type: 'document',
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size,
+                content: content,
+                timestamp: new Date().toISOString(),
+                subject: 'General',
+                tags: []
+            };
+            
+            // Add to notes array
+            this.notes.push(note);
+            this.saveData();
+            
+            // Display the uploaded file
+            this.displayUploadedFile(note);
+            
+            // Hide progress and show success
+            this.hideUploadProgress();
+            this.showNotification(`${file.name} uploaded successfully!`, 'success');
+            
+            // Add activity
+            this.addActivity(`Uploaded document: ${file.name}`, 'file-upload');
+            
+            // Update dashboard
+            this.updateDashboard();
+            
+        } catch (error) {
+            console.error('File upload error:', error);
+            this.hideUploadProgress();
+            this.showNotification(`Failed to upload ${file.name}`, 'error');
+        }
+    }
+    
+    showUploadProgress(fileName) {
+        const progressContainer = document.getElementById('uploadProgress');
+        const progressText = document.getElementById('progressText');
+        
+        progressText.textContent = `Uploading ${fileName}...`;
+        progressContainer.style.display = 'block';
+    }
+    
+    async simulateUploadProgress() {
+        const progressFill = document.getElementById('progressFill');
+        
+        for (let i = 0; i <= 100; i += 10) {
+            progressFill.style.width = i + '%';
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+    
+    hideUploadProgress() {
+        const progressContainer = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        
+        progressContainer.style.display = 'none';
+        progressFill.style.width = '0%';
+    }
+    
+    async extractFileContent(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                const content = e.target.result;
+                
+                if (file.type === 'application/pdf') {
+                    // For PDF files, we'll store the base64 content
+                    // In a real implementation, you'd use PDF.js to extract text
+                    resolve({
+                        type: 'pdf',
+                        data: content,
+                        preview: 'PDF document uploaded. Content extraction available in full version.'
+                    });
+                } else if (file.type.includes('word')) {
+                    // For Word documents, we'll store the content
+                    // In a real implementation, you'd use mammoth.js or similar
+                    resolve({
+                        type: 'word',
+                        data: content,
+                        preview: 'Word document uploaded. Content extraction available in full version.'
+                    });
+                } else {
+                    resolve({
+                        type: 'unknown',
+                        data: content,
+                        preview: 'Document uploaded successfully.'
+                    });
+                }
+            };
+            
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    displayUploadedFile(note) {
+        const uploadedFiles = document.getElementById('uploadedFiles');
+        
+        const fileExtension = note.fileName.split('.').pop().toLowerCase();
+        const fileIconClass = this.getFileIconClass(fileExtension);
+        
+        const fileElement = document.createElement('div');
+        fileElement.className = 'uploaded-file';
+        fileElement.innerHTML = `
+            <div class="file-info">
+                <div class="file-icon ${fileExtension}">
+                    <i class="fas ${fileIconClass}"></i>
+                </div>
+                <div class="file-details">
+                    <h4>${note.fileName}</h4>
+                    <p>${this.formatFileSize(note.fileSize)} • ${new Date(note.timestamp).toLocaleDateString()}</p>
+                </div>
+            </div>
+            <div class="file-actions">
+                <button class="btn btn-primary" onclick="studyBuddy.viewFileContent('${note.id}')">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button class="btn btn-success" onclick="studyBuddy.addToNotes('${note.id}')">
+                    <i class="fas fa-plus"></i> Add to Notes
+                </button>
+                <button class="btn btn-danger" onclick="studyBuddy.deleteUploadedFile('${note.id}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        `;
+        
+        uploadedFiles.appendChild(fileElement);
+    }
+    
+    getFileIconClass(extension) {
+        const iconMap = {
+            'pdf': 'fa-file-pdf',
+            'doc': 'fa-file-word',
+            'docx': 'fa-file-word'
+        };
+        return iconMap[extension] || 'fa-file';
+    }
+    
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    viewFileContent(noteId) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) return;
+        
+        // Create a modal or preview area to show file content
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h3><i class="fas ${this.getFileIconClass(note.fileName.split('.').pop())}"></i> ${note.fileName}</h3>
+                    <button class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="file-preview">
+                        <h5>File Preview:</h5>
+                        <div class="file-preview-content">
+                            ${note.content.preview}
+                        </div>
+                    </div>
+                    <div class="file-info-details">
+                        <p><strong>File Size:</strong> ${this.formatFileSize(note.fileSize)}</p>
+                        <p><strong>Upload Date:</strong> ${new Date(note.timestamp).toLocaleString()}</p>
+                        <p><strong>File Type:</strong> ${note.fileType}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    addToNotes(noteId) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) return;
+        
+        // Switch to notes section and refresh gallery
+        this.switchSection('notes');
+        this.loadNotesGallery();
+        
+        this.showNotification(`${note.fileName} added to your notes!`, 'success');
+    }
+    
+    deleteUploadedFile(noteId) {
+        if (confirm('Are you sure you want to delete this file?')) {
+            this.notes = this.notes.filter(n => n.id !== noteId);
+            this.saveData();
+            
+            // Remove from UI
+            const fileElement = document.querySelector(`[onclick*="${noteId}"]`).closest('.uploaded-file');
+            if (fileElement) {
+                fileElement.remove();
+            }
+            
+            this.showNotification('File deleted successfully', 'success');
+            this.updateDashboard();
+        }
     }
 }
 
