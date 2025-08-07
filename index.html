@@ -184,22 +184,64 @@
             <section id="notes" class="section">
                 <div class="section-header">
                     <h2><i class="fas fa-camera"></i> Capture Notes</h2>
-                    <p>Take photos of your notes and we'll help you organize them!</p>
+                    <p>Take photos of your notes or upload documents - we'll help you organize them!</p>
                 </div>
                 
-                <div class="camera-container">
-                    <video id="cameraFeed" autoplay playsinline></video>
-                    <canvas id="photoCanvas" style="display: none;"></canvas>
-                    <div class="camera-controls">
-                        <button id="startCamera" class="btn btn-primary">
-                            <i class="fas fa-camera"></i> Start Camera
-                        </button>
-                        <button id="capturePhoto" class="btn btn-success" style="display: none;">
-                            <i class="fas fa-camera-retro"></i> Capture Photo
-                        </button>
-                        <button id="stopCamera" class="btn btn-secondary" style="display: none;">
-                            <i class="fas fa-stop"></i> Stop Camera
-                        </button>
+                <!-- Capture Options Tabs -->
+                <div class="capture-tabs">
+                    <button class="capture-tab active" data-tab="camera">
+                        <i class="fas fa-camera"></i> Camera Capture
+                    </button>
+                    <button class="capture-tab" data-tab="upload">
+                        <i class="fas fa-file-upload"></i> File Upload
+                    </button>
+                </div>
+                
+                <!-- Camera Capture Tab -->
+                <div id="camera-tab" class="capture-content active">
+                    <div class="camera-container">
+                        <video id="cameraFeed" autoplay playsinline></video>
+                        <canvas id="photoCanvas" style="display: none;"></canvas>
+                        <div class="camera-controls">
+                            <button id="startCamera" class="btn btn-primary">
+                                <i class="fas fa-camera"></i> Start Camera
+                            </button>
+                            <button id="capturePhoto" class="btn btn-success" style="display: none;">
+                                <i class="fas fa-camera-retro"></i> Capture Photo
+                            </button>
+                            <button id="stopCamera" class="btn btn-secondary" style="display: none;">
+                                <i class="fas fa-stop"></i> Stop Camera
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- File Upload Tab -->
+                <div id="upload-tab" class="capture-content">
+                    <div class="file-upload-container">
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h3>Upload Documents</h3>
+                            <p>Drag and drop files here or click to browse</p>
+                            <p class="supported-formats">Supported: PDF, DOC, DOCX (Max 10MB)</p>
+                            <input type="file" id="fileInput" accept=".pdf,.doc,.docx" multiple style="display: none;">
+                            <button id="browseFiles" class="btn btn-primary">
+                                <i class="fas fa-folder-open"></i> Browse Files
+                            </button>
+                        </div>
+                        
+                        <div class="upload-progress" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <p id="progressText">Uploading...</p>
+                        </div>
+                        
+                        <div class="uploaded-files" id="uploadedFiles">
+                            <!-- Uploaded files will appear here -->
+                        </div>
                     </div>
                 </div>
 
