@@ -1384,39 +1384,88 @@ class StudyBuddy {
     
     // Authentication Modal Methods
     showAuthModal(mode = 'login') {
-        const authModal = document.getElementById('authModal');
-        const authForm = document.getElementById('authForm');
-        const authTitle = document.getElementById('authTitle');
-        const authSubmitBtn = document.getElementById('authSubmitBtn');
-        const switchAuthMode = document.getElementById('switchAuthMode');
-        const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
-        
-        this.currentAuthMode = mode;
-        
-        if (mode === 'login') {
-            authTitle.textContent = 'Sign In to StudyBuddy';
-            authSubmitBtn.textContent = 'Sign In';
-            switchAuthMode.textContent = 'Need an account? Sign Up';
-            confirmPasswordGroup.style.display = 'none';
-        } else {
-            authTitle.textContent = 'Create StudyBuddy Account';
-            authSubmitBtn.textContent = 'Sign Up';
-            switchAuthMode.textContent = 'Already have an account? Sign In';
-            confirmPasswordGroup.style.display = 'block';
+        try {
+            console.log('showAuthModal called with mode:', mode);
+            
+            const authModal = document.getElementById('authModal');
+            const authForm = document.getElementById('authForm');
+            const authTitle = document.getElementById('authTitle');
+            const authSubmitBtn = document.getElementById('authSubmitBtn');
+            const switchAuthMode = document.getElementById('switchAuthMode');
+            const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
+            
+            // Check if all elements exist
+            if (!authModal) {
+                console.error('authModal element not found');
+                alert('Authentication modal not found. Please refresh the page.');
+                return;
+            }
+            
+            if (!authTitle || !authSubmitBtn || !switchAuthMode || !confirmPasswordGroup) {
+                console.error('One or more auth modal elements not found');
+                alert('Authentication modal elements missing. Please refresh the page.');
+                return;
+            }
+            
+            this.currentAuthMode = mode;
+            
+            if (mode === 'login') {
+                authTitle.textContent = 'Sign In to StudyBuddy';
+                authSubmitBtn.textContent = 'Sign In';
+                switchAuthMode.textContent = 'Need an account? Sign Up';
+                confirmPasswordGroup.style.display = 'none';
+            } else {
+                authTitle.textContent = 'Create StudyBuddy Account';
+                authSubmitBtn.textContent = 'Sign Up';
+                switchAuthMode.textContent = 'Already have an account? Sign In';
+                confirmPasswordGroup.style.display = 'block';
+            }
+            
+            authModal.style.display = 'flex';
+            if (authForm) {
+                authForm.reset();
+            }
+            
+            console.log('Authentication modal displayed successfully');
+            
+        } catch (error) {
+            console.error('Error in showAuthModal:', error);
+            // Fallback to simple prompt for now
+            const name = prompt('Enter your name for StudyBuddy:');
+            if (name) {
+                const userData = {
+                    id: Date.now().toString(),
+                    name: name,
+                    email: name + '@studybuddy.local',
+                    grade: '9',
+                    loginAt: new Date().toISOString()
+                };
+                this.login(userData);
+                this.showNotification(`Welcome, ${name}!`, 'success');
+            }
         }
-        
-        authModal.style.display = 'flex';
-        authForm.reset();
     }
     
     hideAuthModal() {
-        const authModal = document.getElementById('authModal');
-        authModal.style.display = 'none';
+        try {
+            const authModal = document.getElementById('authModal');
+            if (authModal) {
+                authModal.style.display = 'none';
+            } else {
+                console.error('authModal element not found in hideAuthModal');
+            }
+        } catch (error) {
+            console.error('Error in hideAuthModal:', error);
+        }
     }
     
     switchAuthMode() {
-        const newMode = this.currentAuthMode === 'login' ? 'signup' : 'login';
-        this.showAuthModal(newMode);
+        try {
+            const newMode = this.currentAuthMode === 'login' ? 'signup' : 'login';
+            this.showAuthModal(newMode);
+        } catch (error) {
+            console.error('Error in switchAuthMode:', error);
+        }
     }
     
     handleAuth(e) {
