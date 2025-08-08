@@ -2042,3 +2042,20 @@ body {
         align-items: center;
     }
 }
+
+/* AI Badge Styling */
+.ai-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 500;
+    margin-top: 5px;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.ai-badge i {
+    margin-right: 4px;
+}

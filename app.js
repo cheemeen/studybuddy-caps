@@ -1107,19 +1107,20 @@ class StudyBuddy {
             return;
         }
         
-        mockExamsList.innerHTML = this.mockExams.map(exam => `
+        mockExamsList.innerHTML = this.mockExams.map((exam, index) => `
             <div class="mock-exam-item">
                 <div class="mock-exam-info">
                     <h4>${exam.title}</h4>
                     <p>Subject: ${exam.subject}</p>
                     <p>Questions: ${exam.questions.length}</p>
                     <small>Created: ${exam.created}</small>
+                    ${exam.isAIGenerated ? '<span class="ai-badge"><i class="fas fa-robot"></i> AI Generated</span>' : ''}
                 </div>
                 <div class="mock-exam-actions">
-                    <button class="btn btn-primary btn-sm" onclick="studyBuddy.takeExam(${exam.id})">
+                    <button class="btn btn-primary btn-sm" onclick="studyBuddy.takeExam('${exam.id}')">
                         <i class="fas fa-play"></i> Take Exam
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="studyBuddy.deleteMockExam(${exam.id})">
+                    <button class="btn btn-danger btn-sm" onclick="studyBuddy.deleteMockExam('${exam.id}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
