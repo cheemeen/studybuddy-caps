@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StudyBuddy Icon Generator</title>
+</head>
+<body>
+    <canvas id="iconCanvas" width="512" height="512" style="border: 1px solid #ccc;"></canvas>
+    <br><br>
+    <button onclick="downloadIcon()">Download Icon</button>
+    
+    <script>
+        const canvas = document.getElementById('iconCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Create gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+        gradient.addColorStop(0, '#4facfe');
+        gradient.addColorStop(1, '#00f2fe');
+        
+        // Fill background
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // Draw graduation cap
+        ctx.fillStyle = '#ffffff';
+        
+        // Cap base
+        ctx.fillRect(100, 200, 312, 40);
+        
+        // Cap top
+        ctx.beginPath();
+        ctx.moveTo(80, 200);
+        ctx.lineTo(432, 200);
+        ctx.lineTo(400, 160);
+        ctx.lineTo(112, 160);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Tassel
+        ctx.fillRect(400, 160, 4, 80);
+        ctx.beginPath();
+        ctx.arc(402, 250, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Book
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(180, 280, 152, 120);
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillRect(180, 280, 76, 120);
+        
+        // Book lines
+        ctx.strokeStyle = '#cccccc';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(190, 310);
+        ctx.lineTo(240, 310);
+        ctx.moveTo(190, 330);
+        ctx.lineTo(240, 330);
+        ctx.moveTo(190, 350);
+        ctx.lineTo(240, 350);
+        ctx.stroke();
+        
+        function downloadIcon() {
+            const link = document.createElement('a');
+            link.download = 'icon-512x512.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Auto-download after 1 second
+        setTimeout(downloadIcon, 1000);
+    </script>
+</body>
+</html>

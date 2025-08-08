@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" 
+           Name="StudyBuddy CAPS" 
+           Language="1033" 
+           Version="1.0.0.0" 
+           Manufacturer="StudyBuddy Education" 
+           UpgradeCode="12345678-1234-1234-1234-123456789012">
+    
+    <Package InstallerVersion="200" 
+             Compressed="yes" 
+             InstallScope="perMachine"
+             Description="AI-powered study assistant aligned with South African CAPS curriculum"
+             Comments="StudyBuddy CAPS - Comprehensive study application for students aged 8-18"
+             Manufacturer="StudyBuddy Education" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Feature definition -->
+    <Feature Id="ProductFeature" Title="StudyBuddy CAPS" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="ApplicationShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+    <!-- UI configuration -->
+    <UI>
+      <UIRef Id="WixUI_InstallDir" />
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" Order="2">1</Publish>
+      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">1</Publish>
+    </UI>
+
+    <!-- License -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+    <!-- Installation directory -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+    <!-- Directory structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="StudyBuddy CAPS" />
+      </Directory>
+      
+      <!-- Start Menu -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="StudyBuddy CAPS" />
+      </Directory>
+      
+      <!-- Desktop -->
+      <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+
+    <!-- Application shortcut component -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="12345678-1234-1234-1234-123456789013">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="StudyBuddy CAPS"
+                  Description="AI-powered study assistant for CAPS curriculum"
+                  Target="[#StudyBuddyExe]"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" 
+                       Key="Software\StudyBuddy\StudyBuddy CAPS" 
+                       Name="installed" 
+                       Type="integer" 
+                       Value="1" 
+                       KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Desktop shortcut component -->
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="12345678-1234-1234-1234-123456789014">
+        <Shortcut Id="ApplicationDesktopShortcut"
+                  Name="StudyBuddy CAPS"
+                  Description="AI-powered study assistant for CAPS curriculum"
+                  Target="[#StudyBuddyExe]"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" 
+                       Key="Software\StudyBuddy\StudyBuddy CAPS" 
+                       Name="desktop_shortcut" 
+                       Type="integer" 
+                       Value="1" 
+                       KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+  </Product>
+
+  <!-- Component group for application files -->
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      
+      <!-- Main application files -->
+      <Component Id="MainAppFiles" Guid="12345678-1234-1234-1234-123456789015">
+        <File Id="StudyBuddyExe" 
+              Source="dist\win-unpacked\StudyBuddy.exe" 
+              KeyPath="yes" 
+              Checksum="yes" />
+        <File Id="IndexHtml" Source="dist\win-unpacked\index.html" />
+        <File Id="AppJs" Source="dist\win-unpacked\app.js" />
+        <File Id="StylesCss" Source="dist\win-unpacked\styles.css" />
+        <File Id="PwaStylesCss" Source="dist\win-unpacked\pwa-styles.css" />
+        <File Id="ManifestJson" Source="dist\win-unpacked\manifest.json" />
+        <File Id="SwJs" Source="dist\win-unpacked\sw.js" />
+        <File Id="PackageJson" Source="dist\win-unpacked\package.json" />
+      </Component>
+
+      <!-- Electron core files -->
+      <Component Id="ElectronFiles" Guid="12345678-1234-1234-1234-123456789016">
+        <File Id="ElectronMainJs" Source="dist\win-unpacked\electron-main.js" />
+        <File Id="ElectronPreloadJs" Source="dist\win-unpacked\electron-preload.js" />
+        <File Id="ElectronDataStorageJs" Source="dist\win-unpacked\electron-data-storage.js" />
+      </Component>
+
+      <!-- Icons directory -->
+      <Component Id="IconsComponent" Guid="12345678-1234-1234-1234-123456789017">
+        <CreateFolder />
+        <File Id="Icon16" Source="dist\win-unpacked\icons\icon-16x16.png" />
+        <File Id="Icon32" Source="dist\win-unpacked\icons\icon-32x32.png" />
+        <File Id="Icon48" Source="dist\win-unpacked\icons\icon-48x48.png" />
+        <File Id="Icon64" Source="dist\win-unpacked\icons\icon-64x64.png" />
+        <File Id="Icon128" Source="dist\win-unpacked\icons\icon-128x128.png" />
+        <File Id="Icon256" Source="dist\win-unpacked\icons\icon-256x256.png" />
+        <File Id="Icon512" Source="dist\win-unpacked\icons\icon-512x512.png" />
+      </Component>
+
+      <!-- Node modules and Electron runtime -->
+      <Component Id="NodeModulesComponent" Guid="12345678-1234-1234-1234-123456789018">
+        <CreateFolder />
+        <!-- Note: In a real scenario, you'd need to include all the Electron runtime files -->
+        <!-- This is simplified for demonstration -->
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+</Wix>

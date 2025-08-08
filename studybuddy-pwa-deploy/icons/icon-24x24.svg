@@ -1,0 +1,21 @@
+
+    <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4facfe"/>
+                <stop offset="100%" style="stop-color:#00f2fe"/>
+            </linearGradient>
+        </defs>
+        <rect width="24" height="24" fill="url(#grad)" rx="3.5999999999999996"/>
+        <g fill="white" transform="translate(2.4000000000000004, 7.199999999999999)">
+            <rect x="2.4000000000000004" y="2.4000000000000004" width="14.399999999999999" height="1.92"/>
+            <polygon points="1.2000000000000002,2.4000000000000004 18,2.4000000000000004 16.799999999999997,0.48 2.4000000000000004,0.48"/>
+            <rect x="16.799999999999997" y="0.48" width="0.192" height="3.5999999999999996"/>
+            <circle cx="16.896" cy="4.5600000000000005" r="0.36"/>
+        </g>
+        <g fill="white" transform="translate(3.5999999999999996, 12)">
+            <rect x="0" y="0" width="7.199999999999999" height="5.5200000000000005"/>
+            <rect x="0" y="0" width="3.5999999999999996" height="5.5200000000000005" fill="#e0e0e0"/>
+        </g>
+        <text x="12" y="20.4" font-family="Arial" font-size="1.6800000000000002" font-weight="bold" text-anchor="middle" fill="white">StudyBuddy</text>
+    </svg>
