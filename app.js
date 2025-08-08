@@ -1382,83 +1382,92 @@ class StudyBuddy {
     
 
     
-    // Authentication Modal Methods
+    // Authentication Modal Methods - Bulletproof Version
     showAuthModal(mode = 'login') {
-        try {
-            console.log('showAuthModal called with mode:', mode);
-            
-            const authModal = document.getElementById('authModal');
-            const authForm = document.getElementById('authForm');
-            const authTitle = document.getElementById('authTitle');
-            const authSubmitBtn = document.getElementById('authSubmitBtn');
-            const switchAuthMode = document.getElementById('switchAuthMode');
-            const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
-            
-            // Check if all elements exist
-            if (!authModal) {
-                console.error('authModal element not found');
-                alert('Authentication modal not found. Please refresh the page.');
-                return;
+        console.log('=== AUTHENTICATION MODAL DEBUG START ===');
+        console.log('showAuthModal called with mode:', mode);
+        
+        // Use setTimeout to ensure DOM is fully loaded
+        setTimeout(() => {
+            try {
+                // Get all elements with detailed logging
+                console.log('Looking for authModal element...');
+                const authModal = document.getElementById('authModal');
+                console.log('authModal found:', !!authModal, authModal);
+                
+                console.log('Looking for authForm element...');
+                const authForm = document.getElementById('authForm');
+                console.log('authForm found:', !!authForm, authForm);
+                
+                console.log('Looking for authTitle element...');
+                const authTitle = document.getElementById('authTitle');
+                console.log('authTitle found:', !!authTitle, authTitle);
+                
+                console.log('Looking for authSubmitBtn element...');
+                const authSubmitBtn = document.getElementById('authSubmitBtn');
+                console.log('authSubmitBtn found:', !!authSubmitBtn, authSubmitBtn);
+                
+                console.log('Looking for switchAuthMode element...');
+                const switchAuthMode = document.getElementById('switchAuthMode');
+                console.log('switchAuthMode found:', !!switchAuthMode, switchAuthMode);
+                
+                console.log('Looking for confirmPasswordGroup element...');
+                const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
+                console.log('confirmPasswordGroup found:', !!confirmPasswordGroup, confirmPasswordGroup);
+                
+                // If any critical element is missing, use fallback
+                if (!authModal || !authTitle || !authSubmitBtn || !switchAuthMode || !confirmPasswordGroup) {
+                    console.error('CRITICAL: One or more modal elements missing, using fallback');
+                    this.authModalFallback();
+                    return;
+                }
+                
+                console.log('All elements found, proceeding with modal setup...');
+                this.currentAuthMode = mode;
+                
+                // Safely set text content
+                if (authTitle) authTitle.textContent = mode === 'login' ? 'Sign In to StudyBuddy' : 'Create StudyBuddy Account';
+                if (authSubmitBtn) authSubmitBtn.textContent = mode === 'login' ? 'Sign In' : 'Sign Up';
+                if (switchAuthMode) switchAuthMode.textContent = mode === 'login' ? 'Need an account? Sign Up' : 'Already have an account? Sign In';
+                
+                // Safely set display styles
+                if (confirmPasswordGroup) {
+                    confirmPasswordGroup.style.display = mode === 'login' ? 'none' : 'block';
+                }
+                
+                if (authModal) {
+                    authModal.style.display = 'flex';
+                }
+                
+                if (authForm) {
+                    authForm.reset();
+                }
+                
+                console.log('Authentication modal displayed successfully!');
+                console.log('=== AUTHENTICATION MODAL DEBUG END ===');
+                
+            } catch (error) {
+                console.error('CRITICAL ERROR in showAuthModal:', error);
+                console.error('Error stack:', error.stack);
+                this.authModalFallback();
             }
-            
-            if (!authTitle) {
-                console.error('authTitle element not found');
-                return;
-            }
-            
-            if (!authSubmitBtn) {
-                console.error('authSubmitBtn element not found');
-                return;
-            }
-            
-            if (!switchAuthMode) {
-                console.error('switchAuthMode element not found');
-                return;
-            }
-            
-            if (!confirmPasswordGroup) {
-                console.error('confirmPasswordGroup element not found');
-                return;
-            }
-            
-            console.log('All authentication modal elements found successfully');
-            
-            this.currentAuthMode = mode;
-            
-            if (mode === 'login') {
-                authTitle.textContent = 'Sign In to StudyBuddy';
-                authSubmitBtn.textContent = 'Sign In';
-                switchAuthMode.textContent = 'Need an account? Sign Up';
-                confirmPasswordGroup.style.display = 'none';
-            } else {
-                authTitle.textContent = 'Create StudyBuddy Account';
-                authSubmitBtn.textContent = 'Sign Up';
-                switchAuthMode.textContent = 'Already have an account? Sign In';
-                confirmPasswordGroup.style.display = 'block';
-            }
-            
-            authModal.style.display = 'flex';
-            if (authForm) {
-                authForm.reset();
-            }
-            
-            console.log('Authentication modal displayed successfully');
-            
-        } catch (error) {
-            console.error('Error in showAuthModal:', error);
-            // Fallback to simple prompt for now
-            const name = prompt('Enter your name for StudyBuddy:');
-            if (name) {
-                const userData = {
-                    id: Date.now().toString(),
-                    name: name,
-                    email: name + '@studybuddy.local',
-                    grade: '9',
-                    loginAt: new Date().toISOString()
-                };
-                this.login(userData);
-                this.showNotification(`Welcome, ${name}!`, 'success');
-            }
+        }, 100); // Small delay to ensure DOM is ready
+    }
+    
+    // Fallback method when modal fails
+    authModalFallback() {
+        console.log('Using authentication fallback...');
+        const name = prompt('Enter your name for StudyBuddy:');
+        if (name && name.trim()) {
+            const userData = {
+                id: Date.now().toString(),
+                name: name.trim(),
+                email: name.trim().toLowerCase().replace(/\s+/g, '') + '@studybuddy.local',
+                grade: '9',
+                loginAt: new Date().toISOString()
+            };
+            this.login(userData);
+            this.showNotification(`Welcome, ${name}!`, 'success');
         }
     }
     
