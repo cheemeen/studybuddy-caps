@@ -1382,6 +1382,107 @@ class StudyBuddy {
     
 
     
+    // Authentication Modal Methods
+    showAuthModal(mode = 'login') {
+        const authModal = document.getElementById('authModal');
+        const authForm = document.getElementById('authForm');
+        const authTitle = document.getElementById('authTitle');
+        const authSubmitBtn = document.getElementById('authSubmitBtn');
+        const switchAuthMode = document.getElementById('switchAuthMode');
+        const confirmPasswordGroup = document.getElementById('confirmPasswordGroup');
+        
+        this.currentAuthMode = mode;
+        
+        if (mode === 'login') {
+            authTitle.textContent = 'Sign In to StudyBuddy';
+            authSubmitBtn.textContent = 'Sign In';
+            switchAuthMode.textContent = 'Need an account? Sign Up';
+            confirmPasswordGroup.style.display = 'none';
+        } else {
+            authTitle.textContent = 'Create StudyBuddy Account';
+            authSubmitBtn.textContent = 'Sign Up';
+            switchAuthMode.textContent = 'Already have an account? Sign In';
+            confirmPasswordGroup.style.display = 'block';
+        }
+        
+        authModal.style.display = 'flex';
+        authForm.reset();
+    }
+    
+    hideAuthModal() {
+        const authModal = document.getElementById('authModal');
+        authModal.style.display = 'none';
+    }
+    
+    switchAuthMode() {
+        const newMode = this.currentAuthMode === 'login' ? 'signup' : 'login';
+        this.showAuthModal(newMode);
+    }
+    
+    handleAuth(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const name = formData.get('name');
+        const email = formData.get('email');
+        const grade = formData.get('grade');
+        const password = formData.get('password');
+        const confirmPassword = formData.get('confirmPassword');
+        
+        if (this.currentAuthMode === 'signup') {
+            // Validate signup
+            if (!name || !email || !grade || !password) {
+                this.showNotification('Please fill in all fields', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                this.showNotification('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                this.showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            // Create new user
+            const userData = {
+                id: Date.now().toString(),
+                name: name,
+                email: email,
+                grade: grade,
+                password: password, // In real app, this would be hashed
+                createdAt: new Date().toISOString()
+            };
+            
+            this.login(userData);
+            this.showNotification(`Welcome to StudyBuddy, ${name}!`, 'success');
+            
+        } else {
+            // Handle login
+            if (!email || !password) {
+                this.showNotification('Please enter email and password', 'error');
+                return;
+            }
+            
+            // For demo purposes, accept any valid email/password combination
+            const userData = {
+                id: email.replace('@', '_').replace('.', '_'),
+                name: name || email.split('@')[0],
+                email: email,
+                grade: grade || '9',
+                password: password,
+                loginAt: new Date().toISOString()
+            };
+            
+            this.login(userData);
+            this.showNotification(`Welcome back, ${userData.name}!`, 'success');
+        }
+        
+        this.hideAuthModal();
+    }
+    
     // Authentication methods
     login(userData) {
         this.currentUser = userData;
