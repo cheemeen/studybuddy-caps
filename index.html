@@ -203,19 +203,34 @@
                     <p>Take photos of your notes and we'll help you organize them!</p>
                 </div>
                 
-                <div class="camera-container">
-                    <video id="cameraFeed" autoplay playsinline></video>
-                    <canvas id="photoCanvas" style="display: none;"></canvas>
-                    <div class="camera-controls">
-                        <button id="startCamera" class="btn btn-primary">
-                            <i class="fas fa-camera"></i> Start Camera
-                        </button>
-                        <button id="capturePhoto" class="btn btn-success" style="display: none;">
-                            <i class="fas fa-camera-retro"></i> Capture Photo
-                        </button>
-                        <button id="stopCamera" class="btn btn-secondary" style="display: none;">
-                            <i class="fas fa-stop"></i> Stop Camera
-                        </button>
+                <div class="capture-options">
+                    <div class="camera-container">
+                        <video id="cameraFeed" autoplay playsinline></video>
+                        <canvas id="photoCanvas" style="display: none;"></canvas>
+                        <div class="camera-controls">
+                            <button id="startCamera" class="btn btn-primary">
+                                <i class="fas fa-camera"></i> Start Camera
+                            </button>
+                            <button id="capturePhoto" class="btn btn-success" style="display: none;">
+                                <i class="fas fa-camera-retro"></i> Capture Photo
+                            </button>
+                            <button id="stopCamera" class="btn btn-secondary" style="display: none;">
+                                <i class="fas fa-stop"></i> Stop Camera
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-upload-container">
+                        <h3><i class="fas fa-file-upload"></i> Upload Notes</h3>
+                        <div class="upload-area" id="notesUploadArea">
+                            <div class="upload-content">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <h4>Upload Word or PDF Notes</h4>
+                                <p>Drag & drop files or click to browse</p>
+                                <small>Supported formats: .docx, .doc, .pdf</small>
+                                <input type="file" id="notesFileInput" accept=".pdf,.doc,.docx" multiple hidden>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -289,6 +304,9 @@
                     <button id="createFlashcard" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Create New Flashcard
                     </button>
+                    <button id="generateAIFlashcards" class="btn btn-ai">
+                        <i class="fas fa-robot"></i> Generate AI Flashcards
+                    </button>
                     <button id="studyMode" class="btn btn-success">
                         <i class="fas fa-play"></i> Start Study Mode
                     </button>
@@ -311,6 +329,83 @@
                     <div class="form-actions">
                         <button id="saveFlashcard" class="btn btn-success">Save Flashcard</button>
                         <button id="cancelFlashcard" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- AI Flashcard Generator -->
+                <div id="aiFlashcardGenerator" class="ai-flashcard-generator" style="display: none;">
+                    <h3><i class="fas fa-robot"></i> AI Flashcard Generator</h3>
+                    <p>Let AI create personalized flashcards based on your grade level and subject preferences!</p>
+                    
+                    <div class="ai-flashcard-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Grade Level:</label>
+                                <select id="aiFlashcardGrade" class="form-control">
+                                    <option value="">Select Grade</option>
+                                    <option value="3">Grade 3</option>
+                                    <option value="4">Grade 4</option>
+                                    <option value="5">Grade 5</option>
+                                    <option value="6">Grade 6</option>
+                                    <option value="7">Grade 7</option>
+                                    <option value="8">Grade 8</option>
+                                    <option value="9">Grade 9</option>
+                                    <option value="10">Grade 10</option>
+                                    <option value="11">Grade 11</option>
+                                    <option value="12">Grade 12</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Subject:</label>
+                                <select id="aiFlashcardSubject" class="form-control">
+                                    <option value="">Select Subject</option>
+                                    <option value="mathematics">Mathematics</option>
+                                    <option value="english">English</option>
+                                    <option value="science">Natural Sciences</option>
+                                    <option value="social-studies">Social Studies</option>
+                                    <option value="geography">Geography</option>
+                                    <option value="history">History</option>
+                                    <option value="life-skills">Life Skills</option>
+                                    <option value="technology">Technology</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Number of Flashcards:</label>
+                                <select id="aiFlashcardCount" class="form-control">
+                                    <option value="5">5 Flashcards</option>
+                                    <option value="10" selected>10 Flashcards</option>
+                                    <option value="15">15 Flashcards</option>
+                                    <option value="20">20 Flashcards</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Difficulty Level:</label>
+                                <select id="aiFlashcardDifficulty" class="form-control">
+                                    <option value="easy">Easy</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Topic Focus (Optional):</label>
+                            <input type="text" id="aiFlashcardTopic" class="form-control" placeholder="e.g., Multiplication Tables, Vocabulary, Photosynthesis...">
+                            <small class="form-text">Leave blank for general flashcards covering the subject</small>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-flashcard-actions">
+                        <button id="generateAIFlashcardSet" class="btn btn-primary">
+                            <i class="fas fa-magic"></i> Generate Flashcards
+                        </button>
+                        <button id="cancelAIFlashcard" class="btn btn-secondary">Cancel</button>
+                    </div>
+                    
+                    <div id="aiFlashcardStatus" class="ai-generation-status" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <p>AI is generating your personalized flashcards...</p>
                     </div>
                 </div>
 
@@ -351,9 +446,89 @@
                     <button id="createMockExam" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Create Mock Exam
                     </button>
+                    <button id="generateAIExam" class="btn btn-ai">
+                        <i class="fas fa-robot"></i> Generate AI Exam
+                    </button>
                     <button id="takeRandomExam" class="btn btn-success">
                         <i class="fas fa-random"></i> Take Random Exam
                     </button>
+                </div>
+
+                <!-- AI Exam Generator -->
+                <div id="aiExamGenerator" class="ai-exam-generator" style="display: none;">
+                    <h3><i class="fas fa-robot"></i> AI Mock Exam Generator</h3>
+                    <p>Let AI create a personalized mock exam based on your grade level and subject preferences!</p>
+                    
+                    <div class="ai-exam-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Grade Level:</label>
+                                <select id="aiExamGrade" class="form-control">
+                                    <option value="">Select Grade</option>
+                                    <option value="3">Grade 3</option>
+                                    <option value="4">Grade 4</option>
+                                    <option value="5">Grade 5</option>
+                                    <option value="6">Grade 6</option>
+                                    <option value="7">Grade 7</option>
+                                    <option value="8">Grade 8</option>
+                                    <option value="9">Grade 9</option>
+                                    <option value="10">Grade 10</option>
+                                    <option value="11">Grade 11</option>
+                                    <option value="12">Grade 12</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Subject:</label>
+                                <select id="aiExamSubject" class="form-control">
+                                    <option value="">Select Subject</option>
+                                    <option value="mathematics">Mathematics</option>
+                                    <option value="english">English</option>
+                                    <option value="science">Natural Sciences</option>
+                                    <option value="social-studies">Social Studies</option>
+                                    <option value="geography">Geography</option>
+                                    <option value="history">History</option>
+                                    <option value="life-skills">Life Skills</option>
+                                    <option value="technology">Technology</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Number of Questions:</label>
+                                <select id="aiExamQuestionCount" class="form-control">
+                                    <option value="5">5 Questions</option>
+                                    <option value="10" selected>10 Questions</option>
+                                    <option value="15">15 Questions</option>
+                                    <option value="20">20 Questions</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Difficulty Level:</label>
+                                <select id="aiExamDifficulty" class="form-control">
+                                    <option value="easy">Easy</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Topic Focus (Optional):</label>
+                            <input type="text" id="aiExamTopic" class="form-control" placeholder="e.g., Fractions, Photosynthesis, World War II...">
+                            <small class="form-text">Leave blank for general questions covering the subject</small>
+                        </div>
+                    </div>
+                    
+                    <div class="ai-exam-actions">
+                        <button id="generateAIQuestions" class="btn btn-primary">
+                            <i class="fas fa-magic"></i> Generate Questions
+                        </button>
+                        <button id="cancelAIExam" class="btn btn-secondary">Cancel</button>
+                    </div>
+                    
+                    <div id="aiGenerationStatus" class="ai-generation-status" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <p>AI is generating your personalized mock exam...</p>
+                    </div>
                 </div>
 
                 <div id="examCreator" class="exam-creator" style="display: none;">

@@ -80,7 +80,7 @@ class StudyBuddy {
         document.getElementById('capturePhoto').addEventListener('click', () => this.capturePhoto());
         document.getElementById('stopCamera').addEventListener('click', () => this.stopCamera());
         
-        // File upload
+        // File upload for exams
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         
@@ -90,26 +90,49 @@ class StudyBuddy {
         uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
         fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
         
+        // File upload for notes
+        const notesUploadArea = document.getElementById('notesUploadArea');
+        const notesFileInput = document.getElementById('notesFileInput');
+        
+        if (notesUploadArea && notesFileInput) {
+            notesUploadArea.addEventListener('click', () => notesFileInput.click());
+            notesUploadArea.addEventListener('dragover', (e) => this.handleNotesDragOver(e));
+            notesUploadArea.addEventListener('drop', (e) => this.handleNotesFileDrop(e));
+            notesUploadArea.addEventListener('dragleave', (e) => this.handleNotesDragLeave(e));
+            notesFileInput.addEventListener('change', (e) => this.handleNotesFileSelect(e));
+        }
+        
         // Flashcard controls
         document.getElementById('createFlashcard').addEventListener('click', () => this.showFlashcardCreator());
+        document.getElementById('generateAIFlashcards').addEventListener('click', () => this.showAIFlashcardGenerator());
         document.getElementById('studyMode').addEventListener('click', () => this.startStudyMode());
         document.getElementById('saveFlashcard').addEventListener('click', () => this.saveFlashcard());
         document.getElementById('cancelFlashcard').addEventListener('click', () => this.hideFlashcardCreator());
+        document.getElementById('generateAIFlashcardSet').addEventListener('click', () => this.generateAIFlashcards());
+        document.getElementById('cancelAIFlashcard').addEventListener('click', () => this.hideAIFlashcardGenerator());
         document.getElementById('flipCard').addEventListener('click', () => this.flipFlashcard());
         document.getElementById('nextCard').addEventListener('click', () => this.nextFlashcard());
         document.getElementById('exitStudy').addEventListener('click', () => this.exitStudyMode());
         
         // Mock exam controls
         document.getElementById('createMockExam').addEventListener('click', () => this.showExamCreator());
+        document.getElementById('generateAIExam').addEventListener('click', () => this.showAIExamGenerator());
         document.getElementById('takeRandomExam').addEventListener('click', () => this.takeRandomExam());
         document.getElementById('addQuestion').addEventListener('click', () => this.addExamQuestion());
         document.getElementById('saveExam').addEventListener('click', () => this.saveMockExam());
         document.getElementById('cancelExam').addEventListener('click', () => this.hideExamCreator());
+        document.getElementById('generateAIQuestions').addEventListener('click', () => this.generateAIQuestions());
+        document.getElementById('cancelAIExam').addEventListener('click', () => this.hideAIExamGenerator());
         document.getElementById('submitExam').addEventListener('click', () => this.submitExam());
         document.getElementById('exitExam').addEventListener('click', () => this.exitExam());
         document.getElementById('reviewAnswers').addEventListener('click', () => this.reviewAnswers());
         document.getElementById('retakeExam').addEventListener('click', () => this.retakeCurrentExam());
         document.getElementById('backToExams').addEventListener('click', () => this.backToExams());
+        
+        // Authentication controls
+        document.getElementById('loginBtn').addEventListener('click', () => this.showLoginModal());
+        document.getElementById('signupBtn').addEventListener('click', () => this.showSignupModal());
+        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
         
         // Quick action buttons (dashboard shortcuts)
         document.getElementById('quickCaptureNote').addEventListener('click', () => {
@@ -267,7 +290,7 @@ class StudyBuddy {
         
         this.notes.push(note);
         this.saveUserData();
-        this.updateNotesDisplay();
+        this.loadNotesGallery();
         
         // Point abuse prevention: Daily limit and rate limiting
         const today = new Date().toDateString();
@@ -326,18 +349,63 @@ class StudyBuddy {
             return;
         }
         
-        notesGrid.innerHTML = this.notes.map(note => `
-            <div class="note-item">
-                <img src="${note.imageData}" alt="${note.title}">
-                <div class="note-info">
-                    <h4>${note.title}</h4>
-                    <p>${note.timestamp}</p>
-                    <button class="btn btn-danger btn-sm" onclick="studyBuddy.deleteNote(${note.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `).join('');
+        notesGrid.innerHTML = this.notes.map(note => {
+            if (note.isFile) {
+                // File note display
+                const fileIcon = note.fileType.includes('pdf') ? 'fa-file-pdf' : 'fa-file-word';
+                const fileSize = note.fileSize ? `${(note.fileSize / 1024 / 1024).toFixed(2)} MB` : '';
+                
+                return `
+                    <div class="note-item file-note">
+                        <div class="file-preview" onclick="studyBuddy.viewFileNote(${note.id})">
+                            <i class="fas ${fileIcon}"></i>
+                            <span class="file-type">${note.fileType.includes('pdf') ? 'PDF' : 'Word'}</span>
+                        </div>
+                        <div class="note-info">
+                            <h4>${note.title}</h4>
+                            <p>${note.timestamp}</p>
+                            <small>${fileSize}</small>
+                            <div class="note-actions">
+                                <button class="btn btn-info btn-sm" onclick="studyBuddy.downloadFile(${note.id})" title="Download file">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="btn btn-primary btn-sm" onclick="studyBuddy.editNoteTitle(${note.id})" title="Edit title">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="studyBuddy.deleteNote(${note.id})" title="Delete note">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Image note display
+                return `
+                    <div class="note-item image-note">
+                        <img src="${note.imageData}" alt="${note.title}" onclick="studyBuddy.viewNoteFullscreen(${note.id})">
+                        <div class="note-info">
+                            <h4>${note.title}</h4>
+                            <p>${note.timestamp}</p>
+                            <div class="note-actions">
+                                <button class="btn btn-primary btn-sm" onclick="studyBuddy.editNoteTitle(${note.id})" title="Edit title">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="studyBuddy.deleteNote(${note.id})" title="Delete note">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }).join('');
+        
+        // Enable AI flashcard generation if notes exist
+        const generateBtn = document.getElementById('generateFlashcardsBtn');
+        if (generateBtn) {
+            generateBtn.disabled = false;
+        }
     }
     
     handleDragOver(e) {
@@ -364,6 +432,91 @@ class StudyBuddy {
     handleFileSelect(e) {
         const files = Array.from(e.target.files);
         this.processFiles(files);
+    }
+    
+    // Notes file upload handlers
+    handleNotesDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.getElementById('notesUploadArea').classList.add('dragover');
+    }
+    
+    handleNotesDragLeave(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.getElementById('notesUploadArea').classList.remove('dragover');
+    }
+    
+    handleNotesFileDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.getElementById('notesUploadArea').classList.remove('dragover');
+        
+        const files = Array.from(e.dataTransfer.files);
+        this.processNotesFiles(files);
+    }
+    
+    handleNotesFileSelect(e) {
+        const files = Array.from(e.target.files);
+        this.processNotesFiles(files);
+    }
+    
+    processNotesFiles(files) {
+        const validFiles = files.filter(file => {
+            const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            return validTypes.includes(file.type);
+        });
+        
+        if (validFiles.length === 0) {
+            this.showNotification('Please upload only PDF or Word documents', 'error');
+            return;
+        }
+        
+        validFiles.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const note = {
+                    id: Date.now() + Math.random(),
+                    title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+                    type: 'file',
+                    fileType: file.type,
+                    fileName: file.name,
+                    fileData: e.target.result,
+                    fileSize: file.size,
+                    timestamp: new Date().toLocaleString(),
+                    isFile: true
+                };
+                
+                this.notes.push(note);
+                this.addActivity(`Uploaded note file: ${file.name}`, 'upload');
+                
+                // Point system for file uploads (similar to camera captures)
+                const today = new Date().toDateString();
+                const todayUploads = this.notes.filter(n => 
+                    n.isFile && new Date(n.timestamp).toDateString() === today
+                );
+                
+                if (todayUploads.length <= 3) {
+                    this.addScore(8);
+                    this.showNotification(`Note uploaded successfully! +8 points 📄`, 'success');
+                } else {
+                    this.showNotification('Note uploaded! (Daily point limit reached)', 'info');
+                }
+            };
+            
+            reader.readAsDataURL(file);
+        });
+        
+        // Save data and update UI after processing all files
+        setTimeout(() => {
+            if (this.currentUser) {
+                this.saveUserData();
+            } else {
+                this.saveData();
+            }
+            this.loadNotesGallery();
+            this.updateDashboard();
+        }, 100);
     }
     
     processFiles(files) {
@@ -421,12 +574,297 @@ class StudyBuddy {
         `).join('');
     }
     
+    deleteNote(noteId) {
+        // Find the note first to check if it exists
+        const noteIndex = this.notes.findIndex(note => note.id == noteId);
+        if (noteIndex === -1) {
+            this.showNotification('Note not found', 'error');
+            return;
+        }
+        
+        // Show confirmation dialog
+        if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+            const noteTitle = this.notes[noteIndex].title;
+            this.notes.splice(noteIndex, 1);
+            
+            // Use proper data persistence method
+            if (this.currentUser) {
+                this.saveUserData();
+            } else {
+                this.saveData();
+            }
+            
+            // Update UI displays
+            this.loadNotesGallery();
+            this.updateDashboard();
+            
+            // Add activity log entry
+            this.addActivity(`Deleted note: ${noteTitle}`, 'trash');
+            
+            // Show success notification
+            this.showNotification('Note deleted successfully', 'success');
+        }
+    }
+    
+    editNoteTitle(noteId) {
+        const noteIndex = this.notes.findIndex(note => note.id == noteId);
+        if (noteIndex === -1) {
+            this.showNotification('Note not found', 'error');
+            return;
+        }
+        
+        const currentTitle = this.notes[noteIndex].title;
+        const newTitle = prompt('Enter new title for this note:', currentTitle);
+        
+        if (newTitle && newTitle.trim() !== '' && newTitle !== currentTitle) {
+            this.notes[noteIndex].title = newTitle.trim();
+            
+            // Use proper data persistence method
+            if (this.currentUser) {
+                this.saveUserData();
+            } else {
+                this.saveData();
+            }
+            
+            // Update UI displays
+            this.loadNotesGallery();
+            
+            // Add activity log entry
+            this.addActivity(`Renamed note to: ${newTitle}`, 'edit');
+            
+            // Show success notification
+            this.showNotification('Note title updated successfully', 'success');
+        }
+    }
+    
+    viewNoteFullscreen(noteId) {
+        const note = this.notes.find(n => n.id == noteId);
+        if (!note) {
+            this.showNotification('Note not found', 'error');
+            return;
+        }
+        
+        // Create fullscreen modal
+        const modal = document.createElement('div');
+        modal.className = 'fullscreen-modal';
+        modal.innerHTML = `
+            <div class="fullscreen-content">
+                <div class="fullscreen-header">
+                    <h3>${note.title}</h3>
+                    <button class="close-fullscreen" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="fullscreen-image">
+                    <img src="${note.imageData}" alt="${note.title}">
+                </div>
+                <div class="fullscreen-info">
+                    <p><i class="fas fa-calendar"></i> ${note.timestamp}</p>
+                </div>
+            </div>
+        `;
+        
+        // Add styles if not already present
+        if (!document.getElementById('fullscreen-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'fullscreen-styles';
+            styles.textContent = `
+                .fullscreen-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.9);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .fullscreen-content {
+                    max-width: 90%;
+                    max-height: 90%;
+                    background: white;
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+                .fullscreen-header {
+                    padding: 1rem;
+                    background: #4facfe;
+                    color: white;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .close-fullscreen {
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 1.5rem;
+                    cursor: pointer;
+                }
+                .fullscreen-image img {
+                    max-width: 100%;
+                    max-height: 70vh;
+                    display: block;
+                }
+                .fullscreen-info {
+                    padding: 1rem;
+                    background: #f8f9fa;
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+        
+        document.body.appendChild(modal);
+        
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+    
+    viewFileNote(noteId) {
+        const note = this.notes.find(n => n.id == noteId);
+        if (!note || !note.isFile) {
+            this.showNotification('File note not found', 'error');
+            return;
+        }
+        
+        // For now, show file info and allow download
+        const fileIcon = note.fileType.includes('pdf') ? 'fa-file-pdf' : 'fa-file-word';
+        const fileSize = note.fileSize ? `${(note.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size';
+        
+        const modal = document.createElement('div');
+        modal.className = 'fullscreen-modal';
+        modal.innerHTML = `
+            <div class="fullscreen-content file-content">
+                <div class="fullscreen-header">
+                    <h3>${note.title}</h3>
+                    <button class="close-fullscreen" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="file-display">
+                    <div class="file-icon">
+                        <i class="fas ${fileIcon}"></i>
+                    </div>
+                    <div class="file-details">
+                        <h4>${note.fileName}</h4>
+                        <p><strong>Type:</strong> ${note.fileType.includes('pdf') ? 'PDF Document' : 'Word Document'}</p>
+                        <p><strong>Size:</strong> ${fileSize}</p>
+                        <p><strong>Uploaded:</strong> ${note.timestamp}</p>
+                    </div>
+                </div>
+                <div class="file-actions">
+                    <button class="btn btn-primary" onclick="studyBuddy.downloadFile(${note.id})">
+                        <i class="fas fa-download"></i> Download File
+                    </button>
+                    <button class="btn btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add file-specific styles
+        if (!document.getElementById('file-modal-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'file-modal-styles';
+            styles.textContent = `
+                .file-content {
+                    width: 400px;
+                    max-width: 90%;
+                }
+                .file-display {
+                    padding: 2rem;
+                    text-align: center;
+                }
+                .file-icon {
+                    font-size: 4rem;
+                    color: #4facfe;
+                    margin-bottom: 1rem;
+                }
+                .file-details h4 {
+                    margin-bottom: 1rem;
+                    color: #333;
+                }
+                .file-details p {
+                    margin: 0.5rem 0;
+                    color: #666;
+                }
+                .file-actions {
+                    padding: 1rem;
+                    background: #f8f9fa;
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+        
+        document.body.appendChild(modal);
+        
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+    
+    downloadFile(noteId) {
+        const note = this.notes.find(n => n.id == noteId);
+        if (!note || !note.isFile) {
+            this.showNotification('File not found', 'error');
+            return;
+        }
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = note.fileData;
+        link.download = note.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showNotification(`Downloaded: ${note.fileName}`, 'success');
+        this.addActivity(`Downloaded file: ${note.fileName}`, 'download');
+    }
+    
     deleteExam(examId) {
-        this.exams = this.exams.filter(exam => exam.id !== examId);
-        this.saveData();
-        this.loadExamsList();
-        this.updateDashboard();
-        this.showNotification('Exam deleted', 'info');
+        // Find the exam first to check if it exists
+        const examIndex = this.exams.findIndex(exam => exam.id == examId);
+        if (examIndex === -1) {
+            this.showNotification('Exam not found', 'error');
+            return;
+        }
+        
+        // Show confirmation dialog
+        if (confirm('Are you sure you want to delete this exam? This action cannot be undone.')) {
+            const examName = this.exams[examIndex].name;
+            this.exams.splice(examIndex, 1);
+            
+            // Use proper data persistence method
+            if (this.currentUser) {
+                this.saveUserData();
+            } else {
+                this.saveData();
+            }
+            
+            // Update UI displays
+            this.loadExamsList();
+            this.updateDashboard();
+            
+            // Add activity log entry
+            this.addActivity(`Deleted exam: ${examName}`, 'trash');
+            
+            // Show success notification
+            this.showNotification('Exam deleted successfully', 'success');
+        }
     }
     
     // Flashcard Methods
@@ -799,11 +1237,1299 @@ class StudyBuddy {
         this.currentExam = null;
     }
     
-    // Utility Methods
-    addScore(points) {
-        this.totalScore += points;
-        document.getElementById('totalScore').textContent = this.totalScore;
-        this.saveData();
+    deleteMockExam(examId) {
+        // Find the exam first to check if it exists
+        const examIndex = this.mockExams.findIndex(exam => exam.id == examId);
+        if (examIndex === -1) {
+            this.showNotification('Mock exam not found', 'error');
+            return;
+        }
+        
+        // Confirm deletion with user
+        if (confirm('Are you sure you want to delete this mock exam? This action cannot be undone.')) {
+            const examTitle = this.mockExams[examIndex].title;
+            
+            // Remove the exam from the array
+            this.mockExams.splice(examIndex, 1);
+            
+            // Save the updated data
+            if (this.currentUser) {
+                this.saveUserData();
+            } else {
+                this.saveData();
+            }
+            
+            // Update the UI
+            this.loadMockExamsList();
+            this.updateDashboard();
+            
+            // Log the activity and show notification
+            this.addActivity(`Deleted mock exam: ${examTitle}`, 'trash');
+            this.showNotification('Mock exam deleted successfully', 'success');
+        }
+    }
+    
+    // User Interface and Authentication Methods
+    updateUserInterface() {
+        if (this.currentUser) {
+            // Update user display name
+            const userDisplayName = document.getElementById('userDisplayName');
+            const welcomeText = document.getElementById('welcomeText');
+            const userEmail = document.getElementById('userEmail');
+            const userGrade = document.getElementById('userGrade');
+            
+            if (userDisplayName) {
+                userDisplayName.textContent = this.currentUser.name || this.currentUser.username || 'User';
+            }
+            
+            if (welcomeText) {
+                welcomeText.textContent = `Welcome, ${this.currentUser.name || this.currentUser.username || 'User'}!`;
+            }
+            
+            if (userEmail) {
+                userEmail.textContent = this.currentUser.email || 'Email not provided';
+            }
+            
+            if (userGrade) {
+                userGrade.textContent = this.currentUser.grade ? `Grade: ${this.currentUser.grade}` : 'Grade: Not selected';
+            }
+            
+            // Show/hide authentication buttons
+            const loginBtn = document.getElementById('loginBtn');
+            const signupBtn = document.getElementById('signupBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (signupBtn) signupBtn.style.display = 'none';
+            if (logoutBtn) logoutBtn.style.display = 'inline-block';
+            
+        } else {
+            // Reset to guest user display
+            const userDisplayName = document.getElementById('userDisplayName');
+            const welcomeText = document.getElementById('welcomeText');
+            const userEmail = document.getElementById('userEmail');
+            const userGrade = document.getElementById('userGrade');
+            
+            if (userDisplayName) {
+                userDisplayName.textContent = 'Guest User';
+            }
+            
+            if (welcomeText) {
+                welcomeText.textContent = 'Welcome, Student!';
+            }
+            
+            if (userEmail) {
+                userEmail.textContent = 'Not logged in';
+            }
+            
+            if (userGrade) {
+                userGrade.textContent = 'Grade: Not selected';
+            }
+            
+            // Show/hide authentication buttons
+            const loginBtn = document.getElementById('loginBtn');
+            const signupBtn = document.getElementById('signupBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            if (loginBtn) loginBtn.style.display = 'inline-block';
+            if (signupBtn) signupBtn.style.display = 'inline-block';
+            if (logoutBtn) logoutBtn.style.display = 'none';
+        }
+    }
+    
+    setSyncStatus(status) {
+        this.syncStatus = status;
+        const syncStatusElement = document.getElementById('syncStatus');
+        const syncIndicator = syncStatusElement?.querySelector('.sync-indicator');
+        const syncText = syncStatusElement?.querySelector('span:last-child');
+        
+        if (syncStatusElement && syncIndicator && syncText) {
+            // Remove all status classes
+            syncIndicator.classList.remove('offline', 'syncing', 'synced', 'error');
+            syncStatusElement.classList.remove('offline', 'syncing', 'synced', 'error');
+            
+            // Add current status class
+            syncIndicator.classList.add(status);
+            syncStatusElement.classList.add(status);
+            
+            // Update status text
+            switch (status) {
+                case 'offline':
+                    syncText.textContent = 'Offline Mode';
+                    break;
+                case 'syncing':
+                    syncText.textContent = 'Syncing...';
+                    break;
+                case 'synced':
+                    syncText.textContent = 'Synced';
+                    break;
+                case 'error':
+                    syncText.textContent = 'Sync Error';
+                    break;
+                default:
+                    syncText.textContent = 'Unknown Status';
+            }
+        }
+    }
+    
+    // Authentication methods
+    login(userData) {
+        this.currentUser = userData;
+        localStorage.setItem('studyBuddyUser', JSON.stringify(userData));
+        this.loadUserData();
+        this.updateUserInterface();
+        this.setSyncStatus('synced');
+        this.updateDashboard();
+        this.showNotification('Successfully logged in!', 'success');
+        this.addActivity('User logged in', 'sign-in-alt');
+    }
+    
+    logout() {
+        if (confirm('Are you sure you want to logout? Your data will be saved.')) {
+            // Save current data before logout
+            if (this.currentUser) {
+                this.saveUserData();
+            }
+            
+            this.currentUser = null;
+            localStorage.removeItem('studyBuddyUser');
+            this.setSyncStatus('offline');
+            this.updateUserInterface();
+            this.loadSampleData();
+            this.updateDashboard();
+            this.showNotification('Successfully logged out', 'info');
+        }
+    }
+    
+    saveUserData() {
+        if (this.currentUser) {
+            const userData = {
+                ...this.currentUser,
+                notes: this.notes,
+                exams: this.exams,
+                flashcards: this.flashcards,
+                mockExams: this.mockExams,
+                totalScore: this.totalScore,
+                activities: this.activities,
+                todoList: this.todoList,
+                lastSaved: new Date().toISOString()
+            };
+            
+            // In a real app, this would sync to a server
+            // For now, we'll save to localStorage with user prefix
+            localStorage.setItem(`studyBuddyUserData_${this.currentUser.id || this.currentUser.email}`, JSON.stringify(userData));
+            localStorage.setItem('studyBuddyUser', JSON.stringify(this.currentUser));
+            
+            this.setSyncStatus('synced');
+        }
+    }
+    
+    loadUserData() {
+        if (this.currentUser) {
+            const userDataKey = `studyBuddyUserData_${this.currentUser.id || this.currentUser.email}`;
+            const userData = JSON.parse(localStorage.getItem(userDataKey));
+            
+            if (userData) {
+                this.notes = userData.notes || [];
+                this.exams = userData.exams || [];
+                this.flashcards = userData.flashcards || [];
+                this.mockExams = userData.mockExams || [];
+                this.totalScore = userData.totalScore || 0;
+                this.activities = userData.activities || [];
+                this.todoList = userData.todoList || [];
+                
+                this.setSyncStatus('synced');
+            } else {
+                // First time user, initialize with sample data
+                this.loadSampleData();
+                this.saveUserData();
+            }
+        }
+    }
+    
+    // Points and Scoring System
+    updateScore(points = 0, reason = '') {
+        if (points > 0) {
+            this.totalScore += points;
+            
+            // Save the updated score
+            if (this.currentUser) {
+                this.saveUserData();
+            } else {
+                this.saveData();
+            }
+            
+            // Update the display
+            this.displayScore();
+            
+            // Show notification for points earned
+            if (reason) {
+                this.showNotification(`+${points} points: ${reason}`, 'success');
+            }
+            
+            // Check for achievements/milestones
+            this.checkAchievements();
+        } else {
+            // Just update the display
+            this.displayScore();
+        }
+    }
+    
+    displayScore() {
+        const scoreElement = document.getElementById('totalScore');
+        if (scoreElement) {
+            scoreElement.textContent = this.totalScore;
+        }
+    }
+    
+    // Task completion points system
+    awardTaskPoints(taskType, taskDetails = '') {
+        let points = 0;
+        let reason = '';
+        
+        switch (taskType) {
+            case 'note_capture':
+                points = 10;
+                reason = 'Captured a note';
+                break;
+            case 'note_upload':
+                points = 15;
+                reason = 'Uploaded a study file';
+                break;
+            case 'flashcard_created':
+                points = 12;
+                reason = 'Created a flashcard';
+                break;
+            case 'flashcard_studied':
+                points = 8;
+                reason = 'Studied flashcards';
+                break;
+            case 'exam_uploaded':
+                points = 20;
+                reason = 'Uploaded an exam';
+                break;
+            case 'mock_exam_created':
+                points = 25;
+                reason = 'Created a mock exam';
+                break;
+            case 'ai_exam_generated':
+                points = 20;
+                reason = 'Generated AI mock exam';
+                break;
+            case 'ai_flashcards_generated':
+                points = 15;
+                reason = 'Generated AI flashcards';
+                break;
+            case 'daily_login':
+                points = 5;
+                reason = 'Daily login bonus';
+                break;
+            case 'first_time_feature':
+                points = 30;
+                reason = 'First time using ' + taskDetails;
+                break;
+            case 'streak_bonus':
+                points = parseInt(taskDetails) || 10;
+                reason = 'Study streak bonus';
+                break;
+            default:
+                points = 5;
+                reason = 'Task completed';
+        }
+        
+        this.updateScore(points, reason);
+        this.addActivity(`Earned ${points} points: ${reason}`, 'star');
+    }
+    
+    // Mock exam performance points system
+    awardExamPoints(examResults) {
+        const { score, totalQuestions, examTitle, timeTaken, difficulty } = examResults;
+        const percentage = Math.round((score / totalQuestions) * 100);
+        
+        let basePoints = 0;
+        let bonusPoints = 0;
+        let reason = '';
+        
+        // Base points based on percentage
+        if (percentage >= 90) {
+            basePoints = 50;
+            reason = 'Excellent performance (90%+)';
+        } else if (percentage >= 80) {
+            basePoints = 40;
+            reason = 'Great performance (80-89%)';
+        } else if (percentage >= 70) {
+            basePoints = 30;
+            reason = 'Good performance (70-79%)';
+        } else if (percentage >= 60) {
+            basePoints = 20;
+            reason = 'Fair performance (60-69%)';
+        } else if (percentage >= 50) {
+            basePoints = 10;
+            reason = 'Passing performance (50-59%)';
+        } else {
+            basePoints = 5;
+            reason = 'Participation points';
+        }
+        
+        // Difficulty bonus
+        if (difficulty === 'hard') {
+            bonusPoints += 10;
+        } else if (difficulty === 'medium') {
+            bonusPoints += 5;
+        }
+        
+        // Perfect score bonus
+        if (percentage === 100) {
+            bonusPoints += 25;
+            reason += ' + Perfect Score Bonus';
+        }
+        
+        // Speed bonus (if completed quickly)
+        if (timeTaken && timeTaken < (totalQuestions * 30)) { // Less than 30 seconds per question
+            bonusPoints += 15;
+            reason += ' + Speed Bonus';
+        }
+        
+        // Question count bonus (more questions = more points)
+        if (totalQuestions >= 20) {
+            bonusPoints += 10;
+        } else if (totalQuestions >= 15) {
+            bonusPoints += 5;
+        }
+        
+        const totalPoints = basePoints + bonusPoints;
+        
+        // Award the points
+        this.updateScore(totalPoints, `${examTitle}: ${reason}`);
+        
+        // Log detailed activity
+        this.addActivity(`Mock Exam: ${examTitle} - ${score}/${totalQuestions} (${percentage}%) - ${totalPoints} points`, 'trophy');
+        
+        // Special notifications for achievements
+        if (percentage === 100) {
+            this.showNotification('🎉 Perfect Score! Amazing work!', 'success');
+        } else if (percentage >= 90) {
+            this.showNotification('🌟 Outstanding performance!', 'success');
+        } else if (percentage >= 80) {
+            this.showNotification('👏 Great job!', 'success');
+        }
+        
+        return {
+            totalPoints,
+            basePoints,
+            bonusPoints,
+            percentage,
+            reason
+        };
+    }
+    
+    // Achievement system
+    checkAchievements() {
+        const achievements = this.getAchievements();
+        
+        // Check for new achievements
+        achievements.forEach(achievement => {
+            if (!achievement.unlocked && this.meetsAchievementCriteria(achievement)) {
+                this.unlockAchievement(achievement);
+            }
+        });
+    }
+    
+    getAchievements() {
+        return [
+            {
+                id: 'first_100',
+                title: 'Getting Started',
+                description: 'Earn your first 100 points',
+                points: 100,
+                bonus: 25,
+                unlocked: this.totalScore >= 100
+            },
+            {
+                id: 'note_master',
+                title: 'Note Master',
+                description: 'Capture 10 notes',
+                points: 0,
+                bonus: 50,
+                unlocked: this.notes.length >= 10
+            },
+            {
+                id: 'exam_ace',
+                title: 'Exam Ace',
+                description: 'Score 100% on any mock exam',
+                points: 0,
+                bonus: 100,
+                unlocked: false // Will be checked during exam completion
+            },
+            {
+                id: 'study_streak',
+                title: 'Study Streak',
+                description: 'Study for 7 consecutive days',
+                points: 0,
+                bonus: 75,
+                unlocked: false // Would need daily tracking
+            },
+            {
+                id: 'flashcard_hero',
+                title: 'Flashcard Hero',
+                description: 'Create 25 flashcards',
+                points: 0,
+                bonus: 60,
+                unlocked: this.flashcards.length >= 25
+            },
+            {
+                id: 'ai_explorer',
+                title: 'AI Explorer',
+                description: 'Generate 5 AI mock exams',
+                points: 0,
+                bonus: 80,
+                unlocked: this.mockExams.filter(exam => exam.isAIGenerated).length >= 5
+            }
+        ];
+    }
+    
+    meetsAchievementCriteria(achievement) {
+        switch (achievement.id) {
+            case 'first_100':
+                return this.totalScore >= 100;
+            case 'note_master':
+                return this.notes.length >= 10;
+            case 'flashcard_hero':
+                return this.flashcards.length >= 25;
+            case 'ai_explorer':
+                return this.mockExams.filter(exam => exam.isAIGenerated).length >= 5;
+            default:
+                return false;
+        }
+    }
+    
+    unlockAchievement(achievement) {
+        achievement.unlocked = true;
+        
+        // Award bonus points
+        this.updateScore(achievement.bonus, `Achievement: ${achievement.title}`);
+        
+        // Show special notification
+        this.showNotification(`🏆 Achievement Unlocked: ${achievement.title}! +${achievement.bonus} bonus points`, 'success');
+        
+        // Log achievement
+        this.addActivity(`Unlocked achievement: ${achievement.title}`, 'trophy');
+        
+        // Save achievement data
+        if (!this.achievements) {
+            this.achievements = [];
+        }
+        this.achievements.push({
+            ...achievement,
+            unlockedDate: new Date().toISOString()
+        });
+        
+        if (this.currentUser) {
+            this.saveUserData();
+        } else {
+            this.saveData();
+        }
+    }
+    
+    // Daily bonus system
+    checkDailyBonus() {
+        const today = new Date().toDateString();
+        const lastLogin = localStorage.getItem('studyBuddyLastLogin');
+        
+        if (lastLogin !== today) {
+            this.awardTaskPoints('daily_login');
+            localStorage.setItem('studyBuddyLastLogin', today);
+        }
+    }
+    
+    // Authentication Modal Methods
+    showLoginModal() {
+        // For demo purposes, create a simple login simulation
+        const name = prompt('Enter your name:');
+        const email = prompt('Enter your email:');
+        const grade = prompt('Enter your grade (3-12):');
+        
+        if (name && email) {
+            const userData = {
+                id: Date.now(),
+                name: name.trim(),
+                email: email.trim(),
+                grade: grade ? parseInt(grade.trim()) : null,
+                joinDate: new Date().toISOString()
+            };
+            
+            this.login(userData);
+        }
+    }
+    
+    showSignupModal() {
+        // For demo purposes, create a simple signup simulation
+        const name = prompt('Create your name:');
+        const email = prompt('Create your email:');
+        const grade = prompt('Select your grade (3-12):');
+        
+        if (name && email) {
+            const userData = {
+                id: Date.now(),
+                name: name.trim(),
+                email: email.trim(),
+                grade: grade ? parseInt(grade.trim()) : null,
+                joinDate: new Date().toISOString()
+            };
+            
+            this.login(userData);
+            this.showNotification('Account created successfully!', 'success');
+        }
+    }
+    
+    // AI Flashcard Generation Methods
+    showAIFlashcardGenerator() {
+        document.getElementById('aiFlashcardGenerator').style.display = 'block';
+        document.getElementById('flashcardCreator').style.display = 'none';
+        
+        // Auto-fill grade if user has one set
+        const userGrade = this.currentUser?.grade;
+        if (userGrade) {
+            document.getElementById('aiFlashcardGrade').value = userGrade;
+        }
+    }
+    
+    hideAIFlashcardGenerator() {
+        document.getElementById('aiFlashcardGenerator').style.display = 'none';
+        document.getElementById('aiFlashcardStatus').style.display = 'none';
+        this.clearAIFlashcardForm();
+    }
+    
+    clearAIFlashcardForm() {
+        document.getElementById('aiFlashcardGrade').value = '';
+        document.getElementById('aiFlashcardSubject').value = '';
+        document.getElementById('aiFlashcardCount').value = '10';
+        document.getElementById('aiFlashcardDifficulty').value = 'medium';
+        document.getElementById('aiFlashcardTopic').value = '';
+    }
+    
+    async generateAIFlashcards() {
+        const grade = document.getElementById('aiFlashcardGrade').value;
+        const subject = document.getElementById('aiFlashcardSubject').value;
+        const flashcardCount = parseInt(document.getElementById('aiFlashcardCount').value);
+        const difficulty = document.getElementById('aiFlashcardDifficulty').value;
+        const topic = document.getElementById('aiFlashcardTopic').value.trim();
+        
+        // Validation
+        if (!grade || !subject) {
+            this.showNotification('Please select both grade level and subject', 'error');
+            return;
+        }
+        
+        // Show loading status
+        document.getElementById('aiFlashcardStatus').style.display = 'block';
+        document.getElementById('generateAIFlashcardSet').disabled = true;
+        
+        try {
+            // Generate AI flashcards
+            const flashcards = await this.createAIFlashcards(grade, subject, flashcardCount, difficulty, topic);
+            
+            if (flashcards && flashcards.length > 0) {
+                // Add the flashcards to the collection
+                flashcards.forEach(flashcard => {
+                    const newFlashcard = {
+                        id: Date.now() + Math.random(),
+                        front: flashcard.front,
+                        back: flashcard.back,
+                        subject: subject,
+                        created: new Date().toLocaleString(),
+                        isAIGenerated: true,
+                        grade: grade,
+                        difficulty: difficulty,
+                        topic: topic || 'General'
+                    };
+                    
+                    this.flashcards.push(newFlashcard);
+                });
+                
+                // Save the flashcards
+                if (this.currentUser) {
+                    this.saveUserData();
+                } else {
+                    this.saveData();
+                }
+                
+                // Update UI
+                this.loadFlashcardsList();
+                this.updateDashboard();
+                this.hideAIFlashcardGenerator();
+                
+                // Log activity and show success
+                const topicText = topic ? ` - ${topic}` : '';
+                this.addActivity(`Generated ${flashcardCount} AI flashcards: ${subject}${topicText} (Grade ${grade})`, 'robot');
+                this.showNotification(`Successfully generated ${flashcardCount} flashcards for ${subject}!`, 'success');
+                
+                // Award points for using AI feature
+                this.awardTaskPoints('ai_flashcards_generated', `${flashcardCount} flashcards`);
+                
+            } else {
+                throw new Error('No flashcards generated');
+            }
+            
+        } catch (error) {
+            console.error('AI Flashcard Generation Error:', error);
+            this.showNotification('Failed to generate AI flashcards. Please try again.', 'error');
+        } finally {
+            document.getElementById('aiFlashcardStatus').style.display = 'none';
+            document.getElementById('generateAIFlashcardSet').disabled = false;
+        }
+    }
+    
+    async createAIFlashcards(grade, subject, flashcardCount, difficulty, topic) {
+        // This is a comprehensive AI flashcard generation system
+        // In a real implementation, this would call an actual AI service
+        // For now, we'll create a sophisticated local generation system
+        
+        const flashcardBank = this.getFlashcardBank(grade, subject, difficulty, topic);
+        const selectedFlashcards = [];
+        
+        // Shuffle and select flashcards
+        const shuffled = flashcardBank.sort(() => 0.5 - Math.random());
+        const flashcardsToUse = shuffled.slice(0, Math.min(flashcardCount, shuffled.length));
+        
+        // If we need more flashcards, generate additional ones
+        if (flashcardsToUse.length < flashcardCount) {
+            const additionalFlashcards = this.generateAdditionalFlashcards(
+                grade, subject, difficulty, topic, flashcardCount - flashcardsToUse.length
+            );
+            flashcardsToUse.push(...additionalFlashcards);
+        }
+        
+        return flashcardsToUse.map(f => ({
+            front: f.front,
+            back: f.back
+        }));
+    }
+    
+    getFlashcardBank(grade, subject, difficulty, topic) {
+        const gradeNum = parseInt(grade);
+        const flashcards = [];
+        
+        // Mathematics flashcards by grade
+        if (subject === 'mathematics') {
+            if (gradeNum >= 3 && gradeNum <= 5) {
+                flashcards.push(
+                    {
+                        front: "What is 7 + 5?",
+                        back: "12"
+                    },
+                    {
+                        front: "What is 9 × 3?",
+                        back: "27"
+                    },
+                    {
+                        front: "How many sides does a square have?",
+                        back: "4 sides"
+                    },
+                    {
+                        front: "What is half of 16?",
+                        back: "8"
+                    },
+                    {
+                        front: "What comes after 99?",
+                        back: "100"
+                    },
+                    {
+                        front: "What is 15 - 8?",
+                        back: "7"
+                    },
+                    {
+                        front: "How many minutes are in an hour?",
+                        back: "60 minutes"
+                    },
+                    {
+                        front: "What is 4 × 5?",
+                        back: "20"
+                    }
+                );
+            } else if (gradeNum >= 6 && gradeNum <= 8) {
+                flashcards.push(
+                    {
+                        front: "What is 12²?",
+                        back: "144"
+                    },
+                    {
+                        front: "What is 75% as a fraction?",
+                        back: "3/4"
+                    },
+                    {
+                        front: "What is the area formula for a rectangle?",
+                        back: "Length × Width"
+                    },
+                    {
+                        front: "What is 144 ÷ 12?",
+                        back: "12"
+                    },
+                    {
+                        front: "What is the perimeter of a square with side 5cm?",
+                        back: "20cm"
+                    },
+                    {
+                        front: "Solve: x + 7 = 15",
+                        back: "x = 8"
+                    },
+                    {
+                        front: "What is 0.5 as a percentage?",
+                        back: "50%"
+                    },
+                    {
+                        front: "What is the circumference formula for a circle?",
+                        back: "2πr or πd"
+                    }
+                );
+            } else if (gradeNum >= 9 && gradeNum <= 12) {
+                flashcards.push(
+                    {
+                        front: "What is the quadratic formula?",
+                        back: "x = (-b ± √(b²-4ac)) / 2a"
+                    },
+                    {
+                        front: "What is the derivative of x³?",
+                        back: "3x²"
+                    },
+                    {
+                        front: "What is sin²θ + cos²θ equal to?",
+                        back: "1"
+                    },
+                    {
+                        front: "What is the slope-intercept form?",
+                        back: "y = mx + b"
+                    },
+                    {
+                        front: "What is log₁₀(100)?",
+                        back: "2"
+                    },
+                    {
+                        front: "What is the area of a triangle?",
+                        back: "½ × base × height"
+                    }
+                );
+            }
+        }
+        
+        // Science flashcards by grade
+        if (subject === 'science') {
+            if (gradeNum >= 3 && gradeNum <= 5) {
+                flashcards.push(
+                    {
+                        front: "What do plants need to grow?",
+                        back: "Water, sunlight, air, and nutrients"
+                    },
+                    {
+                        front: "What are the three states of matter?",
+                        back: "Solid, liquid, and gas"
+                    },
+                    {
+                        front: "Which planet is closest to the Sun?",
+                        back: "Mercury"
+                    },
+                    {
+                        front: "What do we call animals that eat only plants?",
+                        back: "Herbivores"
+                    },
+                    {
+                        front: "How many legs does an insect have?",
+                        back: "6 legs"
+                    },
+                    {
+                        front: "What is the center of our solar system?",
+                        back: "The Sun"
+                    }
+                );
+            } else if (gradeNum >= 6 && gradeNum <= 8) {
+                flashcards.push(
+                    {
+                        front: "What is photosynthesis?",
+                        back: "The process plants use to make food from sunlight"
+                    },
+                    {
+                        front: "What is the chemical symbol for water?",
+                        back: "H₂O"
+                    },
+                    {
+                        front: "What organ pumps blood through the body?",
+                        back: "The heart"
+                    },
+                    {
+                        front: "What is the smallest unit of matter?",
+                        back: "An atom"
+                    },
+                    {
+                        front: "What gas do plants release during photosynthesis?",
+                        back: "Oxygen"
+                    },
+                    {
+                        front: "What is the speed of light?",
+                        back: "300,000 km/s"
+                    }
+                );
+            } else if (gradeNum >= 9 && gradeNum <= 12) {
+                flashcards.push(
+                    {
+                        front: "What is the powerhouse of the cell?",
+                        back: "Mitochondria"
+                    },
+                    {
+                        front: "What is Newton's first law of motion?",
+                        back: "An object at rest stays at rest unless acted upon by a force"
+                    },
+                    {
+                        front: "What is the chemical formula for glucose?",
+                        back: "C₆H₁₂O₆"
+                    },
+                    {
+                        front: "What is DNA?",
+                        back: "Deoxyribonucleic acid - carries genetic information"
+                    },
+                    {
+                        front: "What is the pH of pure water?",
+                        back: "7 (neutral)"
+                    }
+                );
+            }
+        }
+        
+        // English flashcards by grade
+        if (subject === 'english') {
+            if (gradeNum >= 3 && gradeNum <= 5) {
+                flashcards.push(
+                    {
+                        front: "What is a noun?",
+                        back: "A person, place, thing, or idea"
+                    },
+                    {
+                        front: "What is a verb?",
+                        back: "An action word"
+                    },
+                    {
+                        front: "What is an adjective?",
+                        back: "A word that describes a noun"
+                    },
+                    {
+                        front: "What is the opposite of 'hot'?",
+                        back: "Cold"
+                    },
+                    {
+                        front: "What is a synonym for 'big'?",
+                        back: "Large, huge, enormous"
+                    }
+                );
+            } else if (gradeNum >= 6 && gradeNum <= 8) {
+                flashcards.push(
+                    {
+                        front: "What is a metaphor?",
+                        back: "A comparison without using 'like' or 'as'"
+                    },
+                    {
+                        front: "What is alliteration?",
+                        back: "Repetition of the same sound at the beginning of words"
+                    },
+                    {
+                        front: "What is the past tense of 'run'?",
+                        back: "Ran"
+                    },
+                    {
+                        front: "What is personification?",
+                        back: "Giving human qualities to non-human things"
+                    }
+                );
+            } else if (gradeNum >= 9 && gradeNum <= 12) {
+                flashcards.push(
+                    {
+                        front: "What is dramatic irony?",
+                        back: "When the audience knows something the characters don't"
+                    },
+                    {
+                        front: "What is a thesis statement?",
+                        back: "The main argument or point of an essay"
+                    },
+                    {
+                        front: "What is iambic pentameter?",
+                        back: "A poetic meter with 10 syllables per line"
+                    }
+                );
+            }
+        }
+        
+        // Add more subjects as needed
+        return flashcards;
+    }
+    
+    generateAdditionalFlashcards(grade, subject, difficulty, topic, count) {
+        // Generate template-based flashcards when we need more
+        const additionalFlashcards = [];
+        const gradeNum = parseInt(grade);
+        
+        for (let i = 0; i < count; i++) {
+            if (subject === 'mathematics' && gradeNum >= 3 && gradeNum <= 8) {
+                const num1 = Math.floor(Math.random() * 20) + 1;
+                const num2 = Math.floor(Math.random() * 20) + 1;
+                const operations = [
+                    { op: '+', symbol: '+', calc: (a, b) => a + b },
+                    { op: 'subtract', symbol: '-', calc: (a, b) => Math.max(a, b) - Math.min(a, b) },
+                    { op: 'multiply', symbol: '×', calc: (a, b) => a * b }
+                ];
+                const operation = operations[Math.floor(Math.random() * operations.length)];
+                
+                const answer = operation.calc(num1, num2);
+                
+                additionalFlashcards.push({
+                    front: `What is ${num1} ${operation.symbol} ${num2}?`,
+                    back: answer.toString()
+                });
+            } else {
+                // Generic flashcard for other subjects
+                additionalFlashcards.push({
+                    front: `Sample ${subject} question for Grade ${grade}`,
+                    back: `Sample answer for Grade ${grade} ${subject}`
+                });
+            }
+        }
+        
+        return additionalFlashcards;
+    }
+    
+    // AI Mock Exam Generation Methods
+    showAIExamGenerator() {
+        document.getElementById('aiExamGenerator').style.display = 'block';
+        document.getElementById('examCreator').style.display = 'none';
+        
+        // Auto-fill grade if user has one set
+        const userGrade = this.currentUser?.grade;
+        if (userGrade) {
+            document.getElementById('aiExamGrade').value = userGrade;
+        }
+    }
+    
+    hideAIExamGenerator() {
+        document.getElementById('aiExamGenerator').style.display = 'none';
+        document.getElementById('aiGenerationStatus').style.display = 'none';
+        this.clearAIExamForm();
+    }
+    
+    clearAIExamForm() {
+        document.getElementById('aiExamGrade').value = '';
+        document.getElementById('aiExamSubject').value = '';
+        document.getElementById('aiExamQuestionCount').value = '10';
+        document.getElementById('aiExamDifficulty').value = 'medium';
+        document.getElementById('aiExamTopic').value = '';
+    }
+    
+    async generateAIQuestions() {
+        const grade = document.getElementById('aiExamGrade').value;
+        const subject = document.getElementById('aiExamSubject').value;
+        const questionCount = parseInt(document.getElementById('aiExamQuestionCount').value);
+        const difficulty = document.getElementById('aiExamDifficulty').value;
+        const topic = document.getElementById('aiExamTopic').value.trim();
+        
+        // Validation
+        if (!grade || !subject) {
+            this.showNotification('Please select both grade level and subject', 'error');
+            return;
+        }
+        
+        // Show loading status
+        document.getElementById('aiGenerationStatus').style.display = 'block';
+        document.getElementById('generateAIQuestions').disabled = true;
+        
+        try {
+            // Generate AI questions
+            const questions = await this.createAIQuestions(grade, subject, questionCount, difficulty, topic);
+            
+            if (questions && questions.length > 0) {
+                // Create the mock exam
+                const examTitle = topic 
+                    ? `${subject} - ${topic} (Grade ${grade})` 
+                    : `${subject} Mock Exam (Grade ${grade})`;
+                
+                const newExam = {
+                    id: Date.now(),
+                    title: examTitle,
+                    subject: subject,
+                    questions: questions,
+                    created: new Date().toLocaleString(),
+                    isAIGenerated: true,
+                    grade: grade,
+                    difficulty: difficulty
+                };
+                
+                // Save the exam
+                this.mockExams.push(newExam);
+                
+                if (this.currentUser) {
+                    this.saveUserData();
+                } else {
+                    this.saveData();
+                }
+                
+                // Update UI
+                this.loadMockExamsList();
+                this.updateDashboard();
+                this.hideAIExamGenerator();
+                
+                // Log activity and show success
+                this.addActivity(`Generated AI mock exam: ${examTitle}`, 'robot');
+                this.showNotification(`Successfully generated ${questionCount} questions for ${examTitle}!`, 'success');
+                
+                // Award points for using AI feature
+                this.awardTaskPoints('ai_exam_generated');
+                
+            } else {
+                throw new Error('No questions generated');
+            }
+            
+        } catch (error) {
+            console.error('AI Generation Error:', error);
+            this.showNotification('Failed to generate AI questions. Please try again.', 'error');
+        } finally {
+            document.getElementById('aiGenerationStatus').style.display = 'none';
+            document.getElementById('generateAIQuestions').disabled = false;
+        }
+    }
+    
+    async createAIQuestions(grade, subject, questionCount, difficulty, topic) {
+        // This is a comprehensive AI question generation system
+        // In a real implementation, this would call an actual AI service
+        // For now, we'll create a sophisticated local generation system
+        
+        const questionBank = this.getQuestionBank(grade, subject, difficulty, topic);
+        const selectedQuestions = [];
+        
+        // Shuffle and select questions
+        const shuffled = questionBank.sort(() => 0.5 - Math.random());
+        const questionsToUse = shuffled.slice(0, Math.min(questionCount, shuffled.length));
+        
+        // If we need more questions, generate additional ones
+        if (questionsToUse.length < questionCount) {
+            const additionalQuestions = this.generateAdditionalQuestions(
+                grade, subject, difficulty, topic, questionCount - questionsToUse.length
+            );
+            questionsToUse.push(...additionalQuestions);
+        }
+        
+        return questionsToUse.map(q => ({
+            question: q.question,
+            options: q.options,
+            correct: q.correct
+        }));
+    }
+    
+    getQuestionBank(grade, subject, difficulty, topic) {
+        const gradeNum = parseInt(grade);
+        const questions = [];
+        
+        // Mathematics questions by grade
+        if (subject === 'mathematics') {
+            if (gradeNum >= 3 && gradeNum <= 5) {
+                questions.push(
+                    {
+                        question: "What is 15 + 27?",
+                        options: ["40", "42", "44", "46"],
+                        correct: 1
+                    },
+                    {
+                        question: "What is 8 × 6?",
+                        options: ["46", "48", "50", "52"],
+                        correct: 1
+                    },
+                    {
+                        question: "What is half of 24?",
+                        options: ["10", "11", "12", "13"],
+                        correct: 2
+                    },
+                    {
+                        question: "How many sides does a triangle have?",
+                        options: ["2", "3", "4", "5"],
+                        correct: 1
+                    }
+                );
+            } else if (gradeNum >= 6 && gradeNum <= 8) {
+                questions.push(
+                    {
+                        question: "What is 144 ÷ 12?",
+                        options: ["10", "11", "12", "13"],
+                        correct: 2
+                    },
+                    {
+                        question: "What is 25% of 80?",
+                        options: ["15", "20", "25", "30"],
+                        correct: 1
+                    },
+                    {
+                        question: "What is the area of a rectangle with length 8cm and width 5cm?",
+                        options: ["35 cm²", "40 cm²", "45 cm²", "50 cm²"],
+                        correct: 1
+                    },
+                    {
+                        question: "Solve: 3x + 5 = 14",
+                        options: ["x = 2", "x = 3", "x = 4", "x = 5"],
+                        correct: 1
+                    }
+                );
+            } else if (gradeNum >= 9 && gradeNum <= 12) {
+                questions.push(
+                    {
+                        question: "What is the derivative of x²?",
+                        options: ["x", "2x", "x²", "2x²"],
+                        correct: 1
+                    },
+                    {
+                        question: "Solve: x² - 5x + 6 = 0",
+                        options: ["x = 1, 6", "x = 2, 3", "x = 3, 4", "x = 4, 5"],
+                        correct: 1
+                    },
+                    {
+                        question: "What is sin(30°)?",
+                        options: ["1/2", "√3/2", "1", "0"],
+                        correct: 0
+                    }
+                );
+            }
+        }
+        
+        // Science questions by grade
+        if (subject === 'science') {
+            if (gradeNum >= 3 && gradeNum <= 5) {
+                questions.push(
+                    {
+                        question: "What do plants need to make food?",
+                        options: ["Water only", "Sunlight only", "Water and sunlight", "Soil only"],
+                        correct: 2
+                    },
+                    {
+                        question: "Which planet is closest to the Sun?",
+                        options: ["Venus", "Mercury", "Earth", "Mars"],
+                        correct: 1
+                    },
+                    {
+                        question: "What are the three states of matter?",
+                        options: ["Hot, cold, warm", "Big, small, medium", "Solid, liquid, gas", "Red, blue, green"],
+                        correct: 2
+                    }
+                );
+            } else if (gradeNum >= 6 && gradeNum <= 8) {
+                questions.push(
+                    {
+                        question: "What is photosynthesis?",
+                        options: ["Plants eating soil", "Plants making food from sunlight", "Plants drinking water", "Plants growing taller"],
+                        correct: 1
+                    },
+                    {
+                        question: "What is the chemical formula for water?",
+                        options: ["H2O", "CO2", "NaCl", "O2"],
+                        correct: 0
+                    },
+                    {
+                        question: "Which organ pumps blood through the body?",
+                        options: ["Brain", "Lungs", "Heart", "Liver"],
+                        correct: 2
+                    }
+                );
+            } else if (gradeNum >= 9 && gradeNum <= 12) {
+                questions.push(
+                    {
+                        question: "What is the powerhouse of the cell?",
+                        options: ["Nucleus", "Mitochondria", "Ribosome", "Cytoplasm"],
+                        correct: 1
+                    },
+                    {
+                        question: "What is Newton's first law of motion?",
+                        options: ["F = ma", "Objects at rest stay at rest", "Action-reaction", "Energy conservation"],
+                        correct: 1
+                    },
+                    {
+                        question: "What is the pH of pure water?",
+                        options: ["6", "7", "8", "9"],
+                        correct: 1
+                    }
+                );
+            }
+        }
+        
+        // English questions by grade
+        if (subject === 'english') {
+            if (gradeNum >= 3 && gradeNum <= 5) {
+                questions.push(
+                    {
+                        question: "What is a noun?",
+                        options: ["An action word", "A describing word", "A person, place, or thing", "A connecting word"],
+                        correct: 2
+                    },
+                    {
+                        question: "Which word rhymes with 'cat'?",
+                        options: ["dog", "hat", "run", "big"],
+                        correct: 1
+                    }
+                );
+            } else if (gradeNum >= 6 && gradeNum <= 8) {
+                questions.push(
+                    {
+                        question: "What is a metaphor?",
+                        options: ["A direct comparison", "An indirect comparison", "A rhyming pattern", "A story ending"],
+                        correct: 1
+                    },
+                    {
+                        question: "What is the past tense of 'run'?",
+                        options: ["runned", "ran", "running", "runs"],
+                        correct: 1
+                    }
+                );
+            }
+        }
+        
+        // Add more subjects and questions as needed
+        return questions;
+    }
+    
+    generateAdditionalQuestions(grade, subject, difficulty, topic, count) {
+        // Generate template-based questions when we need more
+        const additionalQuestions = [];
+        const gradeNum = parseInt(grade);
+        
+        for (let i = 0; i < count; i++) {
+            if (subject === 'mathematics' && gradeNum >= 3 && gradeNum <= 8) {
+                const num1 = Math.floor(Math.random() * 20) + 1;
+                const num2 = Math.floor(Math.random() * 20) + 1;
+                const operations = ['+', '-', '×'];
+                const op = operations[Math.floor(Math.random() * operations.length)];
+                
+                let answer;
+                switch(op) {
+                    case '+': answer = num1 + num2; break;
+                    case '-': answer = Math.max(num1, num2) - Math.min(num1, num2); break;
+                    case '×': answer = num1 * num2; break;
+                }
+                
+                const wrongAnswers = [
+                    answer + Math.floor(Math.random() * 5) + 1,
+                    answer - Math.floor(Math.random() * 5) - 1,
+                    answer + Math.floor(Math.random() * 10) + 5
+                ].filter(a => a !== answer && a > 0);
+                
+                const options = [answer, ...wrongAnswers.slice(0, 3)].sort(() => 0.5 - Math.random());
+                const correctIndex = options.indexOf(answer);
+                
+                additionalQuestions.push({
+                    question: `What is ${num1} ${op} ${num2}?`,
+                    options: options.map(String),
+                    correct: correctIndex
+                });
+            } else {
+                // Generic question for other subjects
+                additionalQuestions.push({
+                    question: `Sample ${subject} question for Grade ${grade}`,
+                    options: ["Option A", "Option B", "Option C", "Option D"],
+                    correct: Math.floor(Math.random() * 4)
+                });
+            }
+        }
+        
+        return additionalQuestions;
     }
     
     saveData() {
