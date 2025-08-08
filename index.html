@@ -618,51 +618,49 @@
     
     <!-- Authentication Modal -->
     <div id="authModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="auth-modal-content">
+            <button class="close-auth-modal" id="closeAuthModal">&times;</button>
+            <div class="auth-modal-header">
                 <h2 id="authTitle">Sign In to StudyBuddy</h2>
-                <button class="close-btn" id="closeAuthModal">&times;</button>
             </div>
-            <div class="modal-body">
-                <form id="authForm">
-                    <div class="form-group">
-                        <label for="username">Username:</label>
-                        <input type="text" id="username" required placeholder="Enter your username">
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" required placeholder="Enter your email">
-                    </div>
-                    <div class="form-group" id="gradeGroup">
-                        <label for="studentGrade">Grade Level:</label>
-                        <select id="studentGrade" required>
-                            <option value="">Select your grade</option>
-                            <option value="3">Grade 3</option>
-                            <option value="4">Grade 4</option>
-                            <option value="5">Grade 5</option>
-                            <option value="6">Grade 6</option>
-                            <option value="7">Grade 7</option>
-                            <option value="8">Grade 8</option>
-                            <option value="9">Grade 9</option>
-                            <option value="10">Grade 10</option>
-                            <option value="11">Grade 11</option>
-                            <option value="12">Grade 12</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="passwordGroup">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" required placeholder="Enter your password">
-                    </div>
-                    <div class="form-group" id="confirmPasswordGroup" style="display: none;">
-                        <label for="confirmPassword">Confirm Password:</label>
-                        <input type="password" id="confirmPassword" placeholder="Confirm your password">
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" id="authSubmitBtn" class="btn btn-primary">Sign In</button>
-                        <button type="button" id="switchAuthMode" class="btn btn-secondary">Need an account? Sign Up</button>
-                    </div>
-                </form>
-            </div>
+            <form id="authForm" class="auth-form">
+                <div class="form-group">
+                    <label for="name">Full Name:</label>
+                    <input type="text" id="name" name="name" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="grade">Grade Level:</label>
+                    <select id="grade" name="grade" required>
+                        <option value="">Select your grade</option>
+                        <option value="3">Grade 3</option>
+                        <option value="4">Grade 4</option>
+                        <option value="5">Grade 5</option>
+                        <option value="6">Grade 6</option>
+                        <option value="7">Grade 7</option>
+                        <option value="8">Grade 8</option>
+                        <option value="9">Grade 9</option>
+                        <option value="10">Grade 10</option>
+                        <option value="11">Grade 11</option>
+                        <option value="12">Grade 12</option>
+                    </select>
+                </div>
+                <div class="form-group" id="passwordGroup">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+                </div>
+                <div class="form-group" id="confirmPasswordGroup" style="display: none;">
+                    <label for="confirmPassword">Confirm Password:</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="authSubmitBtn" class="btn btn-primary">Sign In</button>
+                    <button type="button" id="switchAuthMode" class="btn btn-secondary">Need an account? Sign Up</button>
+                </div>
+            </form>
         </div>
     </div>
     
