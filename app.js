@@ -75,10 +75,14 @@ class StudyBuddy {
             });
         });
         
-        // Camera controls
-        document.getElementById('startCamera').addEventListener('click', () => this.startCamera());
-        document.getElementById('capturePhoto').addEventListener('click', () => this.capturePhoto());
-        document.getElementById('stopCamera').addEventListener('click', () => this.stopCamera());
+        // Camera controls - with null checks
+        const startCamera = document.getElementById('startCamera');
+        const capturePhoto = document.getElementById('capturePhoto');
+        const stopCamera = document.getElementById('stopCamera');
+        
+        if (startCamera) startCamera.addEventListener('click', () => this.startCamera());
+        if (capturePhoto) capturePhoto.addEventListener('click', () => this.capturePhoto());
+        if (stopCamera) stopCamera.addEventListener('click', () => this.stopCamera());
         
         // File upload for exams
         const uploadArea = document.getElementById('uploadArea');
@@ -104,56 +108,88 @@ class StudyBuddy {
             notesFileInput.addEventListener('change', (e) => this.handleNotesFileSelect(e));
         }
         
-        // Flashcard controls
-        document.getElementById('createFlashcard').addEventListener('click', () => this.showFlashcardCreator());
-        document.getElementById('generateAIFlashcards').addEventListener('click', () => this.showAIFlashcardGenerator());
-        document.getElementById('studyMode').addEventListener('click', () => this.startStudyMode());
-        document.getElementById('saveFlashcard').addEventListener('click', () => this.saveFlashcard());
-        document.getElementById('cancelFlashcard').addEventListener('click', () => this.hideFlashcardCreator());
-        document.getElementById('generateAIFlashcardSet').addEventListener('click', () => this.generateAIFlashcards());
-        document.getElementById('cancelAIFlashcard').addEventListener('click', () => this.hideAIFlashcardGenerator());
-        document.getElementById('flipCard').addEventListener('click', () => this.flipFlashcard());
-        document.getElementById('nextCard').addEventListener('click', () => this.nextFlashcard());
-        document.getElementById('exitStudy').addEventListener('click', () => this.exitStudyMode());
+        // Flashcard controls - with null checks
+        const createFlashcard = document.getElementById('createFlashcard');
+        const generateAIFlashcards = document.getElementById('generateAIFlashcards');
+        const studyMode = document.getElementById('studyMode');
+        const saveFlashcard = document.getElementById('saveFlashcard');
+        const cancelFlashcard = document.getElementById('cancelFlashcard');
+        const generateAIFlashcardSet = document.getElementById('generateAIFlashcardSet');
+        const cancelAIFlashcard = document.getElementById('cancelAIFlashcard');
+        const flipCard = document.getElementById('flipCard');
+        const nextCard = document.getElementById('nextCard');
+        const exitStudy = document.getElementById('exitStudy');
         
-        // Mock exam controls
-        document.getElementById('createMockExam').addEventListener('click', () => this.showExamCreator());
-        document.getElementById('generateAIExam').addEventListener('click', () => this.showAIExamGenerator());
-        document.getElementById('takeRandomExam').addEventListener('click', () => this.takeRandomExam());
-        document.getElementById('addQuestion').addEventListener('click', () => this.addExamQuestion());
-        document.getElementById('saveExam').addEventListener('click', () => this.saveMockExam());
-        document.getElementById('cancelExam').addEventListener('click', () => this.hideExamCreator());
-        document.getElementById('generateAIQuestions').addEventListener('click', () => this.generateAIQuestions());
-        document.getElementById('cancelAIExam').addEventListener('click', () => this.hideAIExamGenerator());
-        document.getElementById('submitExam').addEventListener('click', () => this.submitExam());
-        document.getElementById('exitExam').addEventListener('click', () => this.exitExam());
-        document.getElementById('reviewAnswers').addEventListener('click', () => this.reviewAnswers());
-        document.getElementById('retakeExam').addEventListener('click', () => this.retakeCurrentExam());
-        document.getElementById('backToExams').addEventListener('click', () => this.backToExams());
+        if (createFlashcard) createFlashcard.addEventListener('click', () => this.showFlashcardCreator());
+        if (generateAIFlashcards) generateAIFlashcards.addEventListener('click', () => this.showAIFlashcardGenerator());
+        if (studyMode) studyMode.addEventListener('click', () => this.startStudyMode());
+        if (saveFlashcard) saveFlashcard.addEventListener('click', () => this.saveFlashcard());
+        if (cancelFlashcard) cancelFlashcard.addEventListener('click', () => this.hideFlashcardCreator());
+        if (generateAIFlashcardSet) generateAIFlashcardSet.addEventListener('click', () => this.generateAIFlashcards());
+        if (cancelAIFlashcard) cancelAIFlashcard.addEventListener('click', () => this.hideAIFlashcardGenerator());
+        if (flipCard) flipCard.addEventListener('click', () => this.flipFlashcard());
+        if (nextCard) nextCard.addEventListener('click', () => this.nextFlashcard());
+        if (exitStudy) exitStudy.addEventListener('click', () => this.exitStudyMode());
         
-        // Authentication controls
-        document.getElementById('loginBtn').addEventListener('click', () => this.showLoginModal());
-        document.getElementById('signupBtn').addEventListener('click', () => this.showSignupModal());
-        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+        // Mock exam controls - with null checks
+        const createMockExam = document.getElementById('createMockExam');
+        const generateAIExam = document.getElementById('generateAIExam');
+        const takeRandomExam = document.getElementById('takeRandomExam');
+        const addQuestion = document.getElementById('addQuestion');
+        const saveExam = document.getElementById('saveExam');
+        const cancelExam = document.getElementById('cancelExam');
+        const generateAIQuestions = document.getElementById('generateAIQuestions');
+        const cancelAIExam = document.getElementById('cancelAIExam');
+        const submitExam = document.getElementById('submitExam');
+        const exitExam = document.getElementById('exitExam');
+        const reviewAnswers = document.getElementById('reviewAnswers');
+        const retakeExam = document.getElementById('retakeExam');
+        const backToExams = document.getElementById('backToExams');
         
-        // Quick action buttons (dashboard shortcuts)
-        document.getElementById('quickCaptureNote').addEventListener('click', () => {
-            this.switchSection('notes');
-            // Auto-start camera if not already started
-            setTimeout(() => {
-                const startCameraBtn = document.getElementById('startCamera');
-                if (startCameraBtn && startCameraBtn.style.display !== 'none') {
-                    this.startCamera();
-                }
-            }, 100);
-        });
-        document.getElementById('quickUploadExam').addEventListener('click', () => {
-            this.switchSection('upload');
-        });
-        document.getElementById('quickCreateFlashcard').addEventListener('click', () => {
-            this.switchSection('flashcards');
-            setTimeout(() => this.showFlashcardCreator(), 100);
-        });
+        if (createMockExam) createMockExam.addEventListener('click', () => this.showExamCreator());
+        if (generateAIExam) generateAIExam.addEventListener('click', () => this.showAIExamGenerator());
+        if (takeRandomExam) takeRandomExam.addEventListener('click', () => this.takeRandomExam());
+        if (addQuestion) addQuestion.addEventListener('click', () => this.addExamQuestion());
+        if (saveExam) saveExam.addEventListener('click', () => this.saveMockExam());
+        if (cancelExam) cancelExam.addEventListener('click', () => this.hideExamCreator());
+        if (generateAIQuestions) generateAIQuestions.addEventListener('click', () => this.generateAIQuestions());
+        if (cancelAIExam) cancelAIExam.addEventListener('click', () => this.hideAIExamGenerator());
+        if (submitExam) submitExam.addEventListener('click', () => this.submitExam());
+        if (exitExam) exitExam.addEventListener('click', () => this.exitExam());
+        if (reviewAnswers) reviewAnswers.addEventListener('click', () => this.reviewAnswers());
+        if (retakeExam) retakeExam.addEventListener('click', () => this.retakeCurrentExam());
+        if (backToExams) backToExams.addEventListener('click', () => this.backToExams());
+        
+        // Quick action buttons (dashboard shortcuts) - with null checks
+        const quickCaptureNote = document.getElementById('quickCaptureNote');
+        const quickUploadExam = document.getElementById('quickUploadExam');
+        const quickCreateFlashcard = document.getElementById('quickCreateFlashcard');
+        
+        if (quickCaptureNote) {
+            quickCaptureNote.addEventListener('click', () => {
+                this.switchSection('notes');
+                // Auto-start camera if not already started
+                setTimeout(() => {
+                    const startCameraBtn = document.getElementById('startCamera');
+                    if (startCameraBtn && startCameraBtn.style.display !== 'none') {
+                        this.startCamera();
+                    }
+                }, 100);
+            });
+        }
+        
+        if (quickUploadExam) {
+            quickUploadExam.addEventListener('click', () => {
+                this.switchSection('upload');
+            });
+        }
+        
+        if (quickCreateFlashcard) {
+            quickCreateFlashcard.addEventListener('click', () => {
+                this.switchSection('flashcards');
+                setTimeout(() => this.showFlashcardCreator(), 100);
+            });
+        }
         
         // Authentication controls - with null checks
         const loginBtn = document.getElementById('loginBtn');
