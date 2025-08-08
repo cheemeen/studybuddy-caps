@@ -1401,11 +1401,27 @@ class StudyBuddy {
                 return;
             }
             
-            if (!authTitle || !authSubmitBtn || !switchAuthMode || !confirmPasswordGroup) {
-                console.error('One or more auth modal elements not found');
-                alert('Authentication modal elements missing. Please refresh the page.');
+            if (!authTitle) {
+                console.error('authTitle element not found');
                 return;
             }
+            
+            if (!authSubmitBtn) {
+                console.error('authSubmitBtn element not found');
+                return;
+            }
+            
+            if (!switchAuthMode) {
+                console.error('switchAuthMode element not found');
+                return;
+            }
+            
+            if (!confirmPasswordGroup) {
+                console.error('confirmPasswordGroup element not found');
+                return;
+            }
+            
+            console.log('All authentication modal elements found successfully');
             
             this.currentAuthMode = mode;
             
