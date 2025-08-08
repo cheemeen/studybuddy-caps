@@ -668,6 +668,71 @@ body {
     margin: 0;
 }
 
+/* Question completion tracking styles */
+.question-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.question-card.answered {
+    border-left-color: #28a745;
+    background: #f0fff4;
+}
+
+.question-card.answered::before {
+    content: "✓";
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #28a745;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.question-card {
+    position: relative;
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+.option-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.option-label:hover {
+    border-color: #4facfe;
+    background: #f0f8ff;
+}
+
+.option-label input[type="radio"]:checked + span {
+    color: #4facfe;
+    font-weight: 600;
+}
+
 .exam-results {
     background: white;
     padding: 2rem;

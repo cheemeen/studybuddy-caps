@@ -111,6 +111,25 @@ class StudyBuddy {
         document.getElementById('retakeExam').addEventListener('click', () => this.retakeCurrentExam());
         document.getElementById('backToExams').addEventListener('click', () => this.backToExams());
         
+        // Quick action buttons (dashboard shortcuts)
+        document.getElementById('quickCaptureNote').addEventListener('click', () => {
+            this.switchSection('notes');
+            // Auto-start camera if not already started
+            setTimeout(() => {
+                const startCameraBtn = document.getElementById('startCamera');
+                if (startCameraBtn && startCameraBtn.style.display !== 'none') {
+                    this.startCamera();
+                }
+            }, 100);
+        });
+        document.getElementById('quickUploadExam').addEventListener('click', () => {
+            this.switchSection('upload');
+        });
+        document.getElementById('quickCreateFlashcard').addEventListener('click', () => {
+            this.switchSection('flashcards');
+            setTimeout(() => this.showFlashcardCreator(), 100);
+        });
+        
         // Authentication controls
         document.getElementById('loginBtn').addEventListener('click', () => this.showAuthModal('login'));
         document.getElementById('signupBtn').addEventListener('click', () => this.showAuthModal('signup'));
@@ -241,17 +260,49 @@ class StudyBuddy {
         const imageData = canvas.toDataURL('image/jpeg', 0.8);
         const note = {
             id: Date.now(),
-            image: imageData,
+            imageData: imageData,
             timestamp: new Date().toLocaleString(),
             title: `Note ${this.notes.length + 1}`
         };
         
         this.notes.push(note);
-        this.saveData();
-        this.updateNotesDisplay(); // Update the notes display and AI button
-        this.addScore(10);
-        this.addActivity('Captured a note', 'camera');
-        this.showNotification('Note captured successfully! 📸', 'success');
+        this.saveUserData();
+        this.updateNotesDisplay();
+        
+        // Point abuse prevention: Daily limit and rate limiting
+        const today = new Date().toDateString();
+        const todayNotes = this.notes.filter(n => 
+            new Date(n.timestamp).toDateString() === today
+        );
+        
+        // Check rate limiting (max 1 photo per 30 seconds)
+        const lastNoteTime = this.notes.length > 1 ? 
+            new Date(this.notes[this.notes.length - 2].timestamp).getTime() : 0;
+        const currentTime = Date.now();
+        const timeSinceLastNote = currentTime - lastNoteTime;
+        
+        if (timeSinceLastNote < 30000 && this.notes.length > 1) {
+            // Rate limited - no points awarded
+            this.addActivity('Captured a note', 'camera');
+            this.showNotification('Note captured! (Please wait 30 seconds between captures for points)', 'info');
+            return;
+        }
+        
+        // Daily limit: Max 10 points per day from note captures (first 1 note gets full points)
+        if (todayNotes.length <= 1) {
+            this.addScore(10);
+            this.addActivity('Captured a note', 'camera');
+            this.showNotification('Note captured successfully! +10 points 📸', 'success');
+        } else if (todayNotes.length <= 5) {
+            // Reduced points for additional notes (2-5)
+            this.addScore(2);
+            this.addActivity('Captured a note', 'camera');
+            this.showNotification('Note captured! +2 points (reduced for additional notes)', 'success');
+        } else {
+            // No points after 5 notes per day
+            this.addActivity('Captured a note', 'camera');
+            this.showNotification('Note captured! (Daily point limit reached)', 'info');
+        }
     }
     
     stopCamera() {
@@ -277,7 +328,7 @@ class StudyBuddy {
         
         notesGrid.innerHTML = this.notes.map(note => `
             <div class="note-item">
-                <img src="${note.image}" alt="${note.title}">
+                <img src="${note.imageData}" alt="${note.title}">
                 <div class="note-info">
                     <h4>${note.title}</h4>
                     <p>${note.timestamp}</p>
@@ -289,15 +340,6 @@ class StudyBuddy {
         `).join('');
     }
     
-    deleteNote(noteId) {
-        this.notes = this.notes.filter(note => note.id !== noteId);
-        this.saveData();
-        this.loadNotesGallery();
-        this.updateDashboard();
-        this.showNotification('Note deleted', 'info');
-    }
-    
-    // File Upload Methods
     handleDragOver(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -647,14 +689,6 @@ class StudyBuddy {
         `).join('');
     }
     
-    deleteMockExam(examId) {
-        this.mockExams = this.mockExams.filter(exam => exam.id !== examId);
-        this.saveData();
-        this.loadMockExamsList();
-        this.updateDashboard();
-        this.showNotification('Mock exam deleted', 'info');
-    }
-    
     takeRandomExam() {
         if (this.mockExams.length === 0) {
             this.showNotification('Create some mock exams first!', 'error');
@@ -667,18 +701,21 @@ class StudyBuddy {
     }
     
     takeExam(examId) {
-        const exam = this.mockExams.find(e => e.id === examId);
-        if (!exam) return;
+        const exam = this.mockExams.find(e => e.id == examId);
+        if (!exam) {
+            this.showNotification('Exam not found', 'error');
+            return;
+        }
         
+        // Set up exam state
         this.currentExam = exam;
-        this.examStartTime = Date.now();
+        this.examStartTime = new Date();
         this.examAnswers = {};
         
-        document.getElementById('examTaking').style.display = 'block';
-        document.getElementById('currentExamTitle').textContent = exam.title;
+        // Use the proper startExam method for consistent UI management
+        this.startExam();
         
-        this.displayExamQuestions();
-        this.startExamTimer();
+        // Log activity
         this.addActivity(`Started exam: ${exam.title}`, 'play');
     }
     
@@ -720,43 +757,6 @@ class StudyBuddy {
             const seconds = Math.floor((elapsed % 60000) / 1000);
             document.getElementById('examTimer').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }, 1000);
-    }
-    
-    submitExam() {
-        if (Object.keys(this.examAnswers).length < this.currentExam.questions.length) {
-            if (!confirm('You haven\'t answered all questions. Submit anyway?')) {
-                return;
-            }
-        }
-        
-        clearInterval(this.examTimer);
-        
-        let correct = 0;
-        this.currentExam.questions.forEach((q, index) => {
-            if (this.examAnswers[index] === q.correct) {
-                correct++;
-            }
-        });
-        
-        const score = Math.round((correct / this.currentExam.questions.length) * 100);
-        const timeTaken = Date.now() - this.examStartTime;
-        const minutes = Math.floor(timeTaken / 60000);
-        const seconds = Math.floor((timeTaken % 60000) / 1000);
-        
-        document.getElementById('examTaking').style.display = 'none';
-        document.getElementById('examResults').style.display = 'block';
-        document.getElementById('examScore').textContent = score;
-        document.getElementById('correctAnswers').textContent = correct;
-        document.getElementById('totalQuestions').textContent = this.currentExam.questions.length;
-        document.getElementById('timeTaken').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        
-        this.addScore(score);
-        this.addActivity(`Completed exam: ${this.currentExam.title} (${score}%)`, 'trophy');
-        this.showNotification(`Exam completed! Score: ${score}% (+${score} points)`, 'success');
-        
-        if (score >= 80) {
-            setTimeout(() => this.celebrateHighScore(score), 500);
-        }
     }
     
     celebrateHighScore(score) {
@@ -1145,11 +1145,6 @@ class StudyBuddy {
             signupBtn.style.display = 'inline-flex';
             logoutBtn.style.display = 'none';
         }
-    }
-    
-    setSyncStatus(status) {
-        this.syncStatus = status;
-        this.updateUserInterface();
     }
     
     getSyncIcon() {
@@ -2584,7 +2579,7 @@ class StudyBuddy {
             this.displayTodoList();
             
             // Award points and track activity
-            this.addPoints(15);
+            this.addScore(15);
             this.addActivity('Generated AI to-do list', 'tasks');
             
             this.showNotification('✨ AI to-do list generated successfully!', 'success');
@@ -3110,7 +3105,7 @@ class StudyBuddy {
             task.completed = !task.completed;
             
             if (task.completed) {
-                this.addPoints(5);
+                this.addScore(5);
                 this.addActivity(`Completed: ${task.title}`, 'check-circle');
                 this.showNotification(`✅ Great job completing: ${task.title}!`, 'success');
             }
@@ -3606,6 +3601,12 @@ class StudyBuddy {
         }
     }
     
+    setSyncStatus(status) {
+        this.syncStatus = status;
+        this.updateUserInterface();
+        this.updateSyncStatusDisplay();
+    }
+    
     hashPassword(password) {
         // Simple hash function for demo purposes - in production use proper hashing
         let hash = 0;
@@ -3762,7 +3763,7 @@ class StudyBuddy {
             
             // Add activity and points
             this.addActivity(`Uploaded exam: ${file.name}`, 'file-upload');
-            this.addPoints(10);
+            this.addScore(10);
             
             this.showNotification(`${file.name} uploaded successfully! +10 points`, 'success');
             
@@ -3794,7 +3795,7 @@ class StudyBuddy {
             if (examIndex !== -1) {
                 const examTitle = this.mockExams[examIndex].title;
                 this.mockExams.splice(examIndex, 1);
-                this.saveData();
+                this.saveUserData();
                 this.loadMockExamsList();
                 this.updateDashboard();
                 this.addActivity(`Deleted mock exam: ${examTitle}`, 'trash');
@@ -3861,15 +3862,40 @@ class StudyBuddy {
     
     // Note Management Methods
     deleteNote(noteId) {
+        // Find the note first to check if it exists
+        const noteIndex = this.notes.findIndex(note => note.id == noteId);
+        if (noteIndex === -1) {
+            this.showNotification('Note not found', 'error');
+            return;
+        }
+        
+        // Show confirmation dialog
         if (confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-            const noteIndex = this.notes.findIndex(note => note.id == noteId);
-            if (noteIndex !== -1) {
-                this.notes.splice(noteIndex, 1);
-                this.saveData();
-                this.loadNotesGallery();
-                this.updateDashboard();
-                this.addActivity('Deleted a note', 'trash');
-                this.showNotification('Note deleted successfully', 'success');
+            const deletedNote = this.notes.splice(noteIndex, 1)[0];
+            
+            // Clean up OCR extracted text data if it exists
+            if (this.extractedTexts && this.extractedTexts.has(noteId)) {
+                this.extractedTexts.delete(noteId);
+            }
+            
+            // Save updated user data
+            this.saveUserData();
+            
+            // Update UI displays
+            this.updateNotesDisplay();
+            this.loadNotesGallery();
+            this.updateDashboard();
+            
+            // Add activity log entry
+            this.addActivity('Deleted a note', 'trash');
+            
+            // Show success notification
+            this.showNotification('Note deleted successfully', 'success');
+            
+            // Disable AI flashcard generation button if no notes remain
+            const generateBtn = document.getElementById('generateFlashcardsBtn');
+            if (generateBtn && this.notes.length === 0) {
+                generateBtn.disabled = true;
             }
         }
     }
@@ -3953,8 +3979,21 @@ class StudyBuddy {
     startExam() {
         if (!this.currentExam) return;
         
-        // Switch to exam section
-        this.switchSection('exam-taking');
+        // Switch to mock-exams section and show exam-taking interface
+        this.switchSection('mock-exams');
+        
+        // Hide exam creator and results, show exam taking
+        document.getElementById('examCreator').style.display = 'none';
+        document.getElementById('examResults').style.display = 'none';
+        document.getElementById('examTaking').style.display = 'block';
+        
+        // Hide the exams library
+        const examsLibrary = document.querySelector('.exams-library');
+        if (examsLibrary) examsLibrary.style.display = 'none';
+        
+        // Hide exam controls
+        const examControls = document.querySelector('.exam-controls');
+        if (examControls) examControls.style.display = 'none';
         
         // Display exam questions
         this.displayExamQuestions();
@@ -3971,43 +4010,90 @@ class StudyBuddy {
         
         const exam = this.currentExam;
         
+        // Update the exam title in the header
+        const examTitleElement = document.getElementById('currentExamTitle');
+        if (examTitleElement) {
+            examTitleElement.textContent = exam.title;
+        }
+        
+        // Display questions in the exam questions container
         examContainer.innerHTML = `
-            <div class="exam-header">
-                <h2>${exam.title}</h2>
-                <p>Subject: ${exam.subject}</p>
-                <p>Questions: ${exam.questions.length}</p>
-                <div id="examTimer" class="exam-timer"></div>
+            <div class="exam-info">
+                <p><strong>Subject:</strong> ${exam.subject}</p>
+                <p><strong>Total Questions:</strong> ${exam.questions.length}</p>
             </div>
-            <div class="exam-questions">
-                ${exam.questions.map((question, index) => `
-                    <div class="question-card" data-question="${index}">
-                        <h4>Question ${index + 1}</h4>
-                        <p class="question-text">${question.question}</p>
-                        <div class="question-options">
-                            ${question.options.map((option, optIndex) => `
-                                <label class="option-label">
-                                    <input type="radio" name="question_${index}" value="${optIndex}" 
-                                           onchange="studyBuddy.recordAnswer(${index}, ${optIndex})">
-                                    <span>${option}</span>
-                                </label>
-                            `).join('')}
-                        </div>
+            ${exam.questions.map((question, index) => `
+                <div class="question-card" data-question="${index}">
+                    <h4>Question ${index + 1}</h4>
+                    <p class="question-text">${question.question}</p>
+                    <div class="question-options">
+                        ${question.options.map((option, optIndex) => `
+                            <label class="option-label">
+                                <input type="radio" name="question_${index}" value="${optIndex}" 
+                                       onchange="studyBuddy.recordAnswer(${index}, ${optIndex})">
+                                <span>${String.fromCharCode(65 + optIndex)}. ${option}</span>
+                            </label>
+                        `).join('')}
                     </div>
-                `).join('')}
-            </div>
-            <div class="exam-controls">
-                <button class="btn btn-success" onclick="studyBuddy.submitExam()">
-                    <i class="fas fa-check"></i> Submit Exam
-                </button>
-                <button class="btn btn-secondary" onclick="studyBuddy.exitExam()">
-                    <i class="fas fa-times"></i> Exit Exam
-                </button>
-            </div>
+                </div>
+            `).join('')}
         `;
+        
+        // Initialize progress tracking
+        this.updateExamProgress();
     }
     
     recordAnswer(questionIndex, answerIndex) {
         this.examAnswers[questionIndex] = answerIndex;
+        
+        // Update visual progress indicators
+        this.updateExamProgress();
+        
+        // Mark question as completed visually
+        const questionCard = document.querySelector(`[data-question="${questionIndex}"]`);
+        if (questionCard) {
+            questionCard.classList.add('answered');
+        }
+    }
+    
+    updateExamProgress() {
+        if (!this.currentExam) return;
+        
+        const totalQuestions = this.currentExam.questions.length;
+        const answeredQuestions = Object.keys(this.examAnswers).length;
+        const progressPercentage = Math.round((answeredQuestions / totalQuestions) * 100);
+        
+        // Update progress bar if it exists
+        const progressFill = document.getElementById('examProgressFill');
+        if (progressFill) {
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+        
+        // Update progress text in exam header
+        const examHeader = document.querySelector('.exam-header');
+        if (examHeader) {
+            let progressText = examHeader.querySelector('.progress-text');
+            if (!progressText) {
+                progressText = document.createElement('div');
+                progressText.className = 'progress-text';
+                examHeader.appendChild(progressText);
+            }
+            progressText.textContent = `Progress: ${answeredQuestions}/${totalQuestions} questions (${progressPercentage}%)`;
+        }
+        
+        // Enable/disable submit button based on completion
+        const submitBtn = document.querySelector('#submitExam');
+        if (submitBtn) {
+            if (answeredQuestions === totalQuestions) {
+                submitBtn.classList.add('btn-success');
+                submitBtn.classList.remove('btn-secondary');
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Submit Complete Exam';
+            } else {
+                submitBtn.classList.add('btn-secondary');
+                submitBtn.classList.remove('btn-success');
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Submit Exam';
+            }
+        }
     }
     
     submitExam() {
@@ -4044,13 +4130,13 @@ class StudyBuddy {
         
         // Add points based on performance
         const points = Math.max(5, Math.round(score / 10));
-        this.addPoints(points);
+        this.addScore(points);
         
         // Add activity
         this.addActivity(`Completed exam: ${this.currentExam.title} (${score}%)`, 'check-circle');
         
         // Save data
-        this.saveData();
+        this.saveUserData();
         
         // Show results
         this.showExamResults(score, correctAnswers, totalQuestions, timeSpent, points);
@@ -4067,48 +4153,31 @@ class StudyBuddy {
     }
     
     showExamResults(score, correct, total, timeSpent, points) {
-        const resultsHTML = `
-            <div class="exam-results">
-                <div class="results-header">
-                    <h2>Exam Results</h2>
-                    <div class="score-display">
-                        <div class="score-circle">
-                            <span class="score-number">${score}%</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="results-details">
-                    <div class="result-item">
-                        <i class="fas fa-check-circle"></i>
-                        <span>Correct Answers: ${correct}/${total}</span>
-                    </div>
-                    <div class="result-item">
-                        <i class="fas fa-clock"></i>
-                        <span>Time Spent: ${timeSpent} minutes</span>
-                    </div>
-                    <div class="result-item">
-                        <i class="fas fa-star"></i>
-                        <span>Points Earned: +${points}</span>
-                    </div>
-                    <div class="result-item">
-                        <i class="fas fa-medal"></i>
-                        <span>Grade: ${this.getGradeFromScore(score)}</span>
-                    </div>
-                </div>
-                <div class="results-actions">
-                    <button class="btn btn-primary" onclick="studyBuddy.retakeCurrentExam()">
-                        <i class="fas fa-redo"></i> Retake Exam
-                    </button>
-                    <button class="btn btn-secondary" onclick="studyBuddy.backToExams()">
-                        <i class="fas fa-arrow-left"></i> Back to Exams
-                    </button>
-                </div>
-            </div>
-        `;
+        // Hide exam taking interface and show results
+        document.getElementById('examTaking').style.display = 'none';
+        document.getElementById('examResults').style.display = 'block';
         
-        const examContainer = document.getElementById('examQuestions');
-        if (examContainer) {
-            examContainer.innerHTML = resultsHTML;
+        // Update the results data in the existing HTML structure
+        const examScoreElement = document.getElementById('examScore');
+        const correctAnswersElement = document.getElementById('correctAnswers');
+        const totalQuestionsElement = document.getElementById('totalQuestions');
+        const timeTakenElement = document.getElementById('timeTaken');
+        
+        if (examScoreElement) examScoreElement.textContent = score;
+        if (correctAnswersElement) correctAnswersElement.textContent = correct;
+        if (totalQuestionsElement) totalQuestionsElement.textContent = total;
+        if (timeTakenElement) timeTakenElement.textContent = `${timeSpent}:00`;
+        
+        // Update button handlers to work with the current exam
+        const retakeBtn = document.getElementById('retakeExam');
+        const backBtn = document.getElementById('backToExams');
+        
+        if (retakeBtn) {
+            retakeBtn.onclick = () => this.retakeCurrentExam();
+        }
+        
+        if (backBtn) {
+            backBtn.onclick = () => this.backToExams();
         }
         
         this.showNotification(`Exam completed! Score: ${score}% (+${points} points)`, score >= 70 ? 'success' : 'warning');
@@ -4146,7 +4215,17 @@ class StudyBuddy {
                 this.examTimer = null;
             }
             
-            this.switchSection('mock-exams');
+            // Hide exam taking interface and show exam library
+            document.getElementById('examTaking').style.display = 'none';
+            document.getElementById('examResults').style.display = 'none';
+            
+            // Show exam controls and library
+            const examControls = document.querySelector('.exam-controls');
+            if (examControls) examControls.style.display = 'block';
+            
+            const examsLibrary = document.querySelector('.exams-library');
+            if (examsLibrary) examsLibrary.style.display = 'block';
+            
             this.showNotification('Exam exited', 'info');
         }
     }
@@ -4158,7 +4237,26 @@ class StudyBuddy {
     }
     
     backToExams() {
-        this.switchSection('mock-exams');
+        // Hide exam results and show exam library
+        document.getElementById('examResults').style.display = 'none';
+        document.getElementById('examTaking').style.display = 'none';
+        
+        // Show exam controls and library
+        const examControls = document.querySelector('.exam-controls');
+        if (examControls) examControls.style.display = 'block';
+        
+        const examsLibrary = document.querySelector('.exams-library');
+        if (examsLibrary) examsLibrary.style.display = 'block';
+        
+        // Reset exam state
+        this.currentExam = null;
+        this.examAnswers = {};
+        this.examStartTime = null;
+        
+        if (this.examTimer) {
+            clearInterval(this.examTimer);
+            this.examTimer = null;
+        }
     }
     
     // Fix point abuse in capture notes
@@ -4197,7 +4295,7 @@ class StudyBuddy {
         );
         
         if (todayNotes.length <= 3) {
-            this.addPoints(10);
+            this.addScore(10);
             this.addActivity('Captured a note photo', 'camera');
             this.showNotification('Note captured successfully! +10 points', 'success');
         } else {
@@ -4220,7 +4318,7 @@ class StudyBuddy {
             
             // Add activity and points
             this.addActivity('Generated AI study advice', 'lightbulb');
-            this.addPoints(5);
+            this.addScore(5);
             
             this.showNotification('✨ Study advice generated successfully!', 'success');
             
@@ -4243,7 +4341,7 @@ class StudyBuddy {
             
             // Add activity and points
             this.addActivity('Analyzed study progress with AI', 'chart-line');
-            this.addPoints(10);
+            this.addScore(10);
             
             this.showNotification('📊 Progress analysis complete!', 'success');
             
@@ -4449,7 +4547,7 @@ class StudyBuddy {
             this.displayTodoList();
             
             // Award points and track activity
-            this.addPoints(15);
+            this.addScore(15);
             this.addActivity('Generated AI to-do list', 'tasks');
             
             this.showNotification('✨ AI to-do list generated successfully!', 'success');
@@ -4551,6 +4649,261 @@ class StudyBuddy {
         });
         
         return studyDays.size / 7; // Consistency over the past week
+    }
+    
+    // Notes Management Methods
+    updateNotesDisplay() {
+        const notesGrid = document.getElementById('notesGrid');
+        const generateBtn = document.getElementById('generateFlashcardsBtn');
+        
+        if (!notesGrid) return;
+        
+        if (this.notes.length === 0) {
+            notesGrid.innerHTML = '<p class="empty-state">No notes captured yet. Start by taking a photo! 📸</p>';
+            if (generateBtn) generateBtn.disabled = true;
+        } else {
+            if (generateBtn) generateBtn.disabled = false;
+            notesGrid.innerHTML = '';
+            
+            this.notes.forEach(note => {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note-item';
+                noteElement.innerHTML = `
+                    <img src="${note.imageData || note.image}" alt="Note ${note.id}" onclick="this.classList.toggle('expanded')">
+                    <div class="note-info">
+                        <small>${new Date(note.timestamp).toLocaleString()}</small>
+                        <button class="btn btn-sm btn-danger" onclick="studyBuddy.deleteNote('${note.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                notesGrid.appendChild(noteElement);
+            });
+        }
+    }
+    
+    loadNotesGallery() {
+        const notesGrid = document.getElementById('notesGrid');
+        if (!notesGrid) return;
+        
+        if (this.notes.length === 0) {
+            notesGrid.innerHTML = '<p class="empty-state">No notes captured yet. Start by taking a photo! 📸</p>';
+            return;
+        }
+        
+        notesGrid.innerHTML = this.notes.map(note => `
+            <div class="note-item">
+                <img src="${note.imageData || note.image}" alt="${note.title || 'Note'}" onclick="studyBuddy.viewNoteDetails('${note.id}')">
+                <div class="note-info">
+                    <h4>${note.title || 'Untitled Note'}</h4>
+                    <p>${new Date(note.timestamp).toLocaleDateString()}</p>
+                    <div class="note-actions">
+                        <button class="btn btn-sm btn-primary" onclick="studyBuddy.viewNoteDetails('${note.id}')">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="studyBuddy.deleteNote('${note.id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    deleteNote(noteId) {
+        const noteIndex = this.notes.findIndex(note => note.id === noteId);
+        if (noteIndex === -1) {
+            this.showNotification('Note not found', 'error');
+            return;
+        }
+        
+        if (confirm('Are you sure you want to delete this note?')) {
+            const deletedNote = this.notes.splice(noteIndex, 1)[0];
+            
+            // Save updated data
+            this.saveUserData();
+            
+            // Update displays
+            this.updateNotesDisplay();
+            this.loadNotesGallery();
+            
+            // Add activity and show notification
+            this.addActivity('Deleted a note', 'trash');
+            this.showNotification('Note deleted successfully', 'success');
+            
+            // Clean up OCR data if it exists
+            if (this.extractedTexts && this.extractedTexts.has(noteId)) {
+                this.extractedTexts.delete(noteId);
+            }
+        }
+    }
+    
+    viewNoteDetails(noteId) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) {
+            this.showNotification('Note not found', 'error');
+            return;
+        }
+        
+        // Create a modal to show note details
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-sticky-note"></i> ${note.title || 'Note Details'}</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="note-preview">
+                        <img src="${note.imageData || note.image}" alt="Note" style="max-width: 100%; height: auto; border-radius: 8px;">
+                    </div>
+                    <div class="note-details" style="margin-top: 1rem;">
+                        <p><strong>Created:</strong> ${new Date(note.timestamp).toLocaleString()}</p>
+                        ${note.extractedText ? `<div class="extracted-text"><strong>Extracted Text:</strong><div style="background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 5px; margin-top: 0.5rem;">${note.extractedText}</div></div>` : ''}
+                    </div>
+                    <div class="note-actions" style="margin-top: 1rem; display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="studyBuddy.generateFlashcardsFromNote('${noteId}')">
+                            <i class="fas fa-layer-group"></i> Generate Flashcards
+                        </button>
+                        <button class="btn btn-danger" onclick="studyBuddy.deleteNote('${noteId}'); this.closest('.modal').remove();">
+                            <i class="fas fa-trash"></i> Delete Note
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add click outside to close
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+    
+    addNoteFromCamera() {
+        // This method handles adding notes from camera capture
+        const video = document.getElementById('video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        if (!video || !video.videoWidth) {
+            this.showNotification('Camera not ready. Please try again.', 'error');
+            return;
+        }
+        
+        // Set canvas dimensions to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw current video frame to canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to data URL
+        const imageData = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Create note object
+        const note = {
+            id: Date.now().toString(),
+            title: `Note ${this.notes.length + 1}`,
+            imageData: imageData,
+            timestamp: new Date().toISOString(),
+            extractedText: null
+        };
+        
+        // Add to notes array
+        this.notes.push(note);
+        
+        // Save data
+        this.saveUserData();
+        
+        // Update displays
+        this.updateNotesDisplay();
+        this.loadNotesGallery();
+        
+        // Add activity and points
+        this.addActivity('Captured a new note', 'camera');
+        
+        // Check for point abuse prevention
+        const today = new Date().toDateString();
+        const todaysNotes = this.notes.filter(n => 
+            new Date(n.timestamp).toDateString() === today
+        ).length;
+        
+        if (todaysNotes <= 10) { // Limit points to prevent abuse
+            this.addScore(2);
+            this.showNotification('Note captured successfully! (+2 points)', 'success');
+        } else {
+            this.showNotification('Note captured successfully! (Daily point limit reached)', 'info');
+        }
+        
+        // Hide camera interface
+        this.stopCamera();
+        
+        return note;
+    }
+    
+    generateFlashcardsFromNote(noteId) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) {
+            this.showNotification('Note not found', 'error');
+            return;
+        }
+        
+        this.showNotification('Generating flashcards from note...', 'info');
+        
+        // Simulate AI processing for flashcard generation
+        setTimeout(() => {
+            const flashcards = this.generateSampleFlashcardsFromNote(note);
+            
+            flashcards.forEach(flashcard => {
+                this.flashcards.push(flashcard);
+            });
+            
+            this.saveUserData();
+            this.addActivity(`Generated ${flashcards.length} flashcards from note`, 'layer-group');
+            this.addScore(flashcards.length * 3);
+            
+            this.showNotification(`Generated ${flashcards.length} flashcards from your note! (+${flashcards.length * 3} points)`, 'success');
+            
+            // Close modal if open
+            const modal = document.querySelector('.modal');
+            if (modal) modal.remove();
+            
+        }, 2000);
+    }
+    
+    generateSampleFlashcardsFromNote(note) {
+        // Generate sample flashcards based on note content
+        const flashcards = [];
+        const topics = [
+            'Key Concept',
+            'Important Formula',
+            'Definition',
+            'Example',
+            'Process Step'
+        ];
+        
+        for (let i = 0; i < 3; i++) {
+            const topic = topics[i % topics.length];
+            flashcards.push({
+                id: Date.now() + i,
+                front: `${topic} from Note ${note.title}`,
+                back: `This is the explanation or answer for ${topic.toLowerCase()} found in your captured note. Review your note image for specific details.`,
+                category: 'From Notes',
+                difficulty: 'Medium',
+                timestamp: new Date().toISOString(),
+                sourceNoteId: note.id
+            });
+        }
+        
+        return flashcards;
     }
     
     calculateProgressMetrics() {
