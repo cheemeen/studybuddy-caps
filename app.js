@@ -82,13 +82,15 @@ class StudyBuddy {
         
         // File upload for exams
         const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
+        const examFileInput = document.getElementById('fileInput');
         
-        uploadArea.addEventListener('click', () => fileInput.click());
-        uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
-        uploadArea.addEventListener('drop', (e) => this.handleFileDrop(e));
-        uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
-        fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        if (uploadArea && examFileInput) {
+            uploadArea.addEventListener('click', () => examFileInput.click());
+            uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
+            uploadArea.addEventListener('drop', (e) => this.handleFileDrop(e));
+            uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+            examFileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        }
         
         // File upload for notes
         const notesUploadArea = document.getElementById('notesUploadArea');
@@ -153,40 +155,68 @@ class StudyBuddy {
             setTimeout(() => this.showFlashcardCreator(), 100);
         });
         
-        // Authentication controls
-        document.getElementById('loginBtn').addEventListener('click', () => this.showAuthModal('login'));
-        document.getElementById('signupBtn').addEventListener('click', () => this.showAuthModal('signup'));
-        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
-        document.getElementById('closeAuthModal').addEventListener('click', () => this.hideAuthModal());
-        document.getElementById('switchAuthMode').addEventListener('click', () => this.switchAuthMode());
-        document.getElementById('authForm').addEventListener('submit', (e) => this.handleAuth(e));
+        // Authentication controls - with null checks
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const closeAuthModal = document.getElementById('closeAuthModal');
+        const switchAuthMode = document.getElementById('switchAuthMode');
+        const authForm = document.getElementById('authForm');
+        
+        if (loginBtn) loginBtn.addEventListener('click', () => this.showAuthModal('login'));
+        if (signupBtn) signupBtn.addEventListener('click', () => this.showAuthModal('signup'));
+        if (logoutBtn) logoutBtn.addEventListener('click', () => this.logout());
+        if (closeAuthModal) closeAuthModal.addEventListener('click', () => this.hideAuthModal());
+        if (switchAuthMode) switchAuthMode.addEventListener('click', () => this.switchAuthMode());
+        if (authForm) authForm.addEventListener('submit', (e) => this.handleAuth(e));
         
         // AI controls
-        document.getElementById('generateFlashcardsBtn').addEventListener('click', () => this.generateFlashcardsFromNotes());
-        document.getElementById('addGeneratedCards').addEventListener('click', () => this.addGeneratedFlashcards());
-        document.getElementById('clearGenerated').addEventListener('click', () => this.clearGeneratedFlashcards());
+        const generateFlashcardsBtn = document.getElementById('generateFlashcardsBtn');
+        const generateAIFlashcardsBtn = document.getElementById('generateAIFlashcardsBtn');
+        const generateAIExamBtn = document.getElementById('generateAIExamBtn');
         
-        // AI Study Assistant event listeners
-        document.getElementById('getStudyAdviceBtn').addEventListener('click', () => {
-            this.generateStudyTips();
-        });
+        if (generateFlashcardsBtn) generateFlashcardsBtn.addEventListener('click', () => this.generateFlashcardsFromNotes());
+        if (generateAIFlashcardsBtn) generateAIFlashcardsBtn.addEventListener('click', () => this.showAIFlashcardGenerator());
+        if (generateAIExamBtn) generateAIExamBtn.addEventListener('click', () => this.showAIExamGenerator());
         
-        document.getElementById('analyzeProgressBtn').addEventListener('click', () => {
-            this.analyzeProgress();
-        });
+        // Mock Exam controls - with null checks
+        const createMockExamBtn = document.getElementById('createMockExamBtn');
+        if (createMockExamBtn) createMockExamBtn.addEventListener('click', () => this.createMockExam());
         
-        // AI To-Do List event listeners
-        document.getElementById('generateTodoBtn').addEventListener('click', () => {
-            this.generateTodoList();
-        });
+        // Upload controls - with null checks
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadFileInput = document.getElementById('fileInput');
         
-        document.getElementById('clearTodoBtn').addEventListener('click', () => {
-            this.clearTodoList();
-        });
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', () => {
+                if (uploadFileInput) uploadFileInput.click();
+            });
+        }
         
-        // AI Exam Feedback controls
-        document.getElementById('generateFeedbackBtn').addEventListener('click', () => this.generateIntelligentExamFeedback());
-        document.getElementById('createStudyPlanBtn').addEventListener('click', () => this.createPersonalizedStudyPlan());
+        if (uploadFileInput) {
+            uploadFileInput.addEventListener('change', (e) => {
+                this.handleFileUpload(e);
+            });
+        }
+        
+        // Note controls - with null checks
+        const captureBtn = document.getElementById('captureBtn');
+        if (captureBtn) captureBtn.addEventListener('click', () => this.capturePhoto());
+        
+        // Flashcard controls - with null checks
+        const createFlashcardBtn = document.getElementById('createFlashcardBtn');
+        if (createFlashcardBtn) {
+            createFlashcardBtn.addEventListener('click', () => {
+                setTimeout(() => this.showFlashcardCreator(), 100);
+            });
+        }
+        
+        // AI Exam Feedback controls - with null checks (these might not exist in HTML)
+        const generateFeedbackBtn = document.getElementById('generateFeedbackBtn');
+        const createStudyPlanBtn = document.getElementById('createStudyPlanBtn');
+        
+        if (generateFeedbackBtn) generateFeedbackBtn.addEventListener('click', () => this.generateIntelligentExamFeedback());
+        if (createStudyPlanBtn) createStudyPlanBtn.addEventListener('click', () => this.createPersonalizedStudyPlan());
     }
     
     switchSection(section) {
