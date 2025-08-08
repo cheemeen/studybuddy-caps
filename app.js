@@ -1295,6 +1295,9 @@ class StudyBuddy {
                 userGrade.textContent = this.currentUser.grade ? `Grade: ${this.currentUser.grade}` : 'Grade: Not selected';
             }
             
+            // Update sync status for logged in user
+            this.setSyncStatus('synced');
+            
             // Show/hide authentication buttons
             const loginBtn = document.getElementById('loginBtn');
             const signupBtn = document.getElementById('signupBtn');
@@ -1327,6 +1330,9 @@ class StudyBuddy {
                 userGrade.textContent = 'Grade: Not selected';
             }
             
+            // Update sync status for guest user
+            this.setSyncStatus('offline');
+            
             // Show/hide authentication buttons
             const loginBtn = document.getElementById('loginBtn');
             const signupBtn = document.getElementById('signupBtn');
@@ -1339,39 +1345,42 @@ class StudyBuddy {
     }
     
     setSyncStatus(status) {
-        this.syncStatus = status;
         const syncStatusElement = document.getElementById('syncStatus');
-        const syncIndicator = syncStatusElement?.querySelector('.sync-indicator');
-        const syncText = syncStatusElement?.querySelector('span:last-child');
+        if (!syncStatusElement) return;
         
-        if (syncStatusElement && syncIndicator && syncText) {
-            // Remove all status classes
-            syncIndicator.classList.remove('offline', 'syncing', 'synced', 'error');
-            syncStatusElement.classList.remove('offline', 'syncing', 'synced', 'error');
-            
-            // Add current status class
-            syncIndicator.classList.add(status);
-            syncStatusElement.classList.add(status);
-            
-            // Update status text
-            switch (status) {
-                case 'offline':
-                    syncText.textContent = 'Offline Mode';
-                    break;
-                case 'syncing':
-                    syncText.textContent = 'Syncing...';
-                    break;
-                case 'synced':
-                    syncText.textContent = 'Synced';
-                    break;
-                case 'error':
-                    syncText.textContent = 'Sync Error';
-                    break;
-                default:
-                    syncText.textContent = 'Unknown Status';
-            }
+        const indicator = syncStatusElement.querySelector('.sync-indicator');
+        const text = syncStatusElement.querySelector('span:last-child');
+        
+        if (!indicator || !text) return;
+        
+        // Remove all status classes
+        indicator.classList.remove('online', 'offline', 'syncing', 'error');
+        
+        switch (status) {
+            case 'synced':
+            case 'online':
+                indicator.classList.add('online');
+                text.textContent = 'Synced';
+                break;
+            case 'syncing':
+                indicator.classList.add('syncing');
+                text.textContent = 'Syncing...';
+                break;
+            case 'offline':
+                indicator.classList.add('offline');
+                text.textContent = 'Offline Mode';
+                break;
+            case 'error':
+                indicator.classList.add('error');
+                text.textContent = 'Sync Error';
+                break;
+            default:
+                indicator.classList.add('offline');
+                text.textContent = 'Offline Mode';
         }
     }
+    
+
     
     // Authentication methods
     login(userData) {

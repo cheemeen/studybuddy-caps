@@ -2059,3 +2059,66 @@ body {
 .ai-badge i {
     margin-right: 4px;
 }
+
+/* Sync Status Indicators */
+.sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.sync-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+}
+
+.sync-indicator.online {
+    background-color: #4CAF50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+}
+
+.sync-indicator.offline {
+    background-color: #9E9E9E;
+    box-shadow: 0 0 8px rgba(158, 158, 158, 0.6);
+}
+
+.sync-indicator.syncing {
+    background-color: #2196F3;
+    box-shadow: 0 0 8px rgba(33, 150, 243, 0.6);
+    animation: pulse 1.5s infinite;
+}
+
+.sync-indicator.error {
+    background-color: #F44336;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
+    animation: blink 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes blink {
+    0%, 50% {
+        opacity: 1;
+    }
+    51%, 100% {
+        opacity: 0.3;
+    }
+}
